@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name" translatable="false">Vitriol</string>
+    <string name="accessibility_service_description">The accessibility permission is required to enable double tap to lock. Any data acquired by Vitriol via this service will not leave your device.</string>
+</resources>

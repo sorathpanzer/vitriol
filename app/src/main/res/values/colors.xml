@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--Black-->
+    <color name="black">#000000</color>
+    <color name="blackTrans80">#CC000000</color>
+    <color name="blackTrans50">#80000000</color>
+    <color name="blackInverse">#FFFFFF</color>
+    <color name="blackInverseTrans10">#1AFFFFFF</color>
+    <color name="blackInverseTrans25">#40FFFFFF</color>
+    <color name="blackInverseTrans50">#80FFFFFF</color>
+    <color name="blackInverseTrans80">#CCFFFFFF</color>
+    <color name="blackInverseTrans90">#E6FFFFFF</color>
+
+</resources>
