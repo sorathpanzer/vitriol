@@ -1,11 +1,8 @@
-import com.android.build.gradle.internal.api.ApkVariantOutputImpl
-import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose") version "2.3.20"
+    id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.parcelize")
     kotlin("plugin.serialization") version "2.3.20"
 }
@@ -45,7 +42,9 @@ android {
         versionCode = 1000
         versionName = "v1.0"
 
-        androidResources { localeFilters += setOf("en") }
+        androidResources {
+            localeFilters += setOf("en")
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,42 +53,17 @@ android {
         abi {
             isEnable = true
             reset()
-            // include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
             include("arm64-v8a")
             isUniversalApk = false
         }
     }
 
-    applicationVariants.all {
-        val variant = this
-        outputs.all {
-            val output = this as BaseVariantOutputImpl
-            val abiName = output.filters.find { it.filterType == "ABI" }?.identifier
-
-            if (abiName != null) {
-                val baseVersionCode = variant.versionCode
-                val abiVersionCode =
-                    when (abiName) {
-                        "x86" -> baseVersionCode - 3
-                        "x86_64" -> baseVersionCode - 2
-                        "armeabi-v7a" -> baseVersionCode - 1
-                        "arm64-v8a" -> baseVersionCode
-                        else -> baseVersionCode
-                    }
-
-                (output as ApkVariantOutputImpl).versionCodeOverride = abiVersionCode
-                output.outputFileName = ("vitriol-${variant.versionName}-$abiName.apk")
-            }
+    val userHomeProps = Properties().apply {
+        val userGradleFile = rootProject.file(".credentials.properties")
+        if (userGradleFile.exists()) {
+            load(userGradleFile.inputStream())
         }
     }
-
-    val userHomeProps =
-        Properties().apply {
-            val userGradleFile = rootProject.file(".credentials.properties")
-            if (userGradleFile.exists()) {
-                load(userGradleFile.inputStream())
-            }
-        }
 
     signingConfigs {
         create("release") {
@@ -109,15 +83,22 @@ android {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isDebuggable = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
+
         getByName("debug") {
             isShrinkResources = true
             isDebuggable = false
             isMinifyEnabled = true
             applicationIdSuffix = ".debug"
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
@@ -127,14 +108,35 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "2.3.20"
-    }
-
     namespace = "app.vitriol"
 
     dependenciesInfo {
         includeInApk = true
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters
+                .find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }
+                ?.identifier
+            val baseVersionCode = output.versionCode.getOrElse(1)
+            val abiVersionCode = when (abi) {
+                "x86" -> baseVersionCode - 3
+                "x86_64" -> baseVersionCode - 2
+                "armeabi-v7a" -> baseVersionCode - 1
+                "arm64-v8a" -> baseVersionCode
+                else -> baseVersionCode
+            }
+            output.versionCode.set(abiVersionCode)
+
+            // Custom APK filename
+            if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
+                val abiSuffix = if (abi != null) "-$abi" else ""
+                output.outputFileName.set("vitriol-${android.defaultConfig.versionName}$abiSuffix.apk")
+            }
+        }
     }
 }
 

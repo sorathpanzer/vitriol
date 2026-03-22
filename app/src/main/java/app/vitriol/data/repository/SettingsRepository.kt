@@ -334,27 +334,16 @@ internal class SettingsRepository(
     }
 
     suspend fun setSwipeLeftApp(app: AppPreference) = setGestureApp(SWIPE_LEFT_APP_JSON, app)
-
     suspend fun setSwipeRightApp(app: AppPreference) = setGestureApp(SWIPE_RIGHT_APP_JSON, app)
-
     suspend fun setSwipeUpApp(app: AppPreference) = setGestureApp(SWIPE_UP_APP_JSON, app)
-
     suspend fun setSwipeDownApp(app: AppPreference) = setGestureApp(SWIPE_DOWN_APP_JSON, app)
-
     suspend fun setTwoFingerSwipeLeftApp(app: AppPreference) = setGestureApp(TWOFINGER_SWIPE_LEFT_APP_JSON, app)
-
     suspend fun setTwoFingerSwipeRightApp(app: AppPreference) = setGestureApp(TWOFINGER_SWIPE_RIGHT_APP_JSON, app)
-
     suspend fun setTwoFingerSwipeUpApp(app: AppPreference) = setGestureApp(TWOFINGER_SWIPE_UP_APP_JSON, app)
-
     suspend fun setTwoFingerSwipeDownApp(app: AppPreference) = setGestureApp(TWOFINGER_SWIPE_DOWN_APP_JSON, app)
-
     suspend fun setOneTapApp(app: AppPreference) = setGestureApp(ONE_TAP_APP_JSON, app)
-
     suspend fun setDoubleTapApp(app: AppPreference) = setGestureApp(DOUBLE_TAP_APP_JSON, app)
-
     suspend fun setPinchInApp(app: AppPreference) = setGestureApp(PINCH_IN_APP_JSON, app)
-
     suspend fun setPinchOutApp(app: AppPreference) = setGestureApp(PINCH_OUT_APP_JSON, app)
 
     internal suspend fun setSettingsLock(locked: Boolean) {
