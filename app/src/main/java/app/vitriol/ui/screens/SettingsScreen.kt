@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.vitriol.data.Constants
 import app.vitriol.data.settings.AppPreference
@@ -640,10 +641,9 @@ private fun SystemSettings(
         title = "About Vitriol",
         subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
         onClick = {
-            val intent =
-                Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse(Constants.URL_ABOUT_VOIDLAUNCHER)
-                }
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = Constants.URL_ABOUT_VOIDLAUNCHER.toUri()
+            }
             context.startActivity(intent)
         },
     )
@@ -698,13 +698,13 @@ private fun SettingsSection(
 
 @Composable
 private fun SettingTextBlock(
+    modifier: Modifier = Modifier,
     title: String,
     subtitle: String? = null,
     description: String? = null,
     titleStyle: TextStyle = MaterialTheme.typography.bodyLarge,
     subtitleStyle: TextStyle = MaterialTheme.typography.bodyMedium,
     descriptionStyle: TextStyle = MaterialTheme.typography.bodySmall,
-    modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
