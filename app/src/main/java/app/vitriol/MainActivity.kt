@@ -34,11 +34,6 @@ internal class MainActivity : ComponentActivity() {
     private val settingsRepository by lazy { SettingsRepository(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-        )
-        window.addFlags(FLAG_LAYOUT_NO_LIMITS)
 
         super.onCreate(savedInstanceState)
 

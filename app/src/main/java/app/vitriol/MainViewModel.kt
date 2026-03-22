@@ -369,7 +369,7 @@ internal class MainViewModel(
 
                 val filteredApps =
                     appList.value.filter {
-                        it.appLabel.startsWith(query.orEmpty(), ignoreCase = true)
+                        it.appLabel.startsWith(query, ignoreCase = true)
                     }
 
                 _appDrawerState.update { it.copy(filteredApps = filteredApps, loading = false) }
