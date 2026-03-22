@@ -1,11 +1,9 @@
 package app.vitriol
 
-import android.appwidget.AppWidgetHost
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import androidx.activity.ComponentActivity
@@ -13,7 +11,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,8 +26,6 @@ import app.vitriol.ui.viewmodels.SettingsViewModel
 import app.vitriol.ui.VitriolNavigation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-
-private const val APP_WIDGETHOST_ID = 1024
 
 internal class MainActivity : ComponentActivity() {
 
@@ -43,14 +42,12 @@ internal class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        Log.d("MainActivity", "AppWidgetHost created with ID: $APP_WIDGETHOST_ID")
-
         handleFirstOpen()
 
         setContent {
             var currentScreen by rememberSaveable { mutableStateOf(Navigation.HOME) }
 
-            val resetFailed by viewModel.launcherResetFailed.collectAsStateWithLifecycle(initialValue = false)
+            val resetFailed by viewModel.launcherResetFailed.collectAsStateWithLifecycle(false)
 
             VitriolTheme {
                 VitriolNavigation(
@@ -72,12 +69,13 @@ internal class MainActivity : ComponentActivity() {
             }
         }
 
-        // ✅ corrigido
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    lifecycleScope.launch { viewModel.emitEvent(UiEvent.NavigateBack) }
+                    lifecycleScope.launch {
+                        viewModel.emitEvent(UiEvent.NavigateBack)
+                    }
                 }
             }
         )
@@ -85,12 +83,13 @@ internal class MainActivity : ComponentActivity() {
 
     private fun handleFirstOpen() {
         lifecycleScope.launch {
-            val settings = settingsRepository.settings.first()
-            if (settings.firstOpen) {
-                viewModel.firstOpen(false)
-                settingsRepository.setFirstOpen(false)
-                settingsRepository.updateSetting {
-                    it.copy(firstOpenTime = System.currentTimeMillis())
+            settingsRepository.settings.first().let { settings ->
+                if (settings.firstOpen) {
+                    viewModel.firstOpen(false)
+                    settingsRepository.setFirstOpen(false)
+                    settingsRepository.updateSetting {
+                        it.copy(firstOpenTime = System.currentTimeMillis())
+                    }
                 }
             }
         }
@@ -100,22 +99,25 @@ internal class MainActivity : ComponentActivity() {
         super.onConfigurationChanged(newConfig)
 
         lifecycleScope.launch {
-            val settings = settingsRepository.settings.first()
+            settingsRepository.settings.first().let { settings ->
+                val followSystem =
+                    AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
 
-            if (
-                settings.plainWallpaper &&
-                AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-            ) {
-                setPlainWallpaper(this@MainActivity, android.R.color.black)
-                if (!isFinishing) recreate()
+                if (settings.plainWallpaper && followSystem) {
+                    setPlainWallpaper(this@MainActivity, android.R.color.black)
+                    if (!isFinishing) recreate()
+                }
             }
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
-            lifecycleScope.launch { viewModel.emitEvent(UiEvent.NavigateBack) }
+            lifecycleScope.launch {
+                viewModel.emitEvent(UiEvent.NavigateBack)
+            }
         }
     }
 }
