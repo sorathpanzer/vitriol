@@ -33,7 +33,6 @@ internal class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val settingsRepository by lazy { SettingsRepository(applicationContext) }
-    private val appWidgetHost by lazy { AppWidgetHost(applicationContext, APP_WIDGETHOST_ID) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         window.setFlags(

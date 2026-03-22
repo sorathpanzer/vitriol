@@ -378,7 +378,6 @@ private fun SettingsContent(
                             settingsManager = settingsManager,
                             onSettingClick = onSettingClick,
                             viewModel = viewModel,
-                            context = context,
                             coroutineScope = coroutineScope,
                         )
                     }
@@ -407,7 +406,6 @@ private fun SettingItem(
     settingsManager: SettingsManager,
     onSettingClick: (KProperty1<AppSettings, *>, Setting) -> Unit,
     viewModel: SettingsViewModel,
-    context: android.content.Context,
     coroutineScope: kotlinx.coroutines.CoroutineScope,
 ) {
     val isEnabled = settingsManager.isSettingEnabled(uiState, annotation)
@@ -539,7 +537,6 @@ private fun DropdownSettingItem(
     uiState: AppSettings,
     enabled: Boolean,
     onClick: () -> Unit,
-    showAppNames: Boolean = true,
 ) {
     val options = annotation.options
     val value = property.get(uiState) as Int
@@ -642,7 +639,7 @@ private fun SystemSettings(
         subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
         onClick = {
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Constants.URL_ABOUT_VOIDLAUNCHER.toUri()
+                data = Constants.URL_ABOUT_VITRIOL.toUri()
             }
             context.startActivity(intent)
         },

@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.parcelize")
+    id("io.gitlab.arturbosch.detekt") version "1.23.6"
     kotlin("plugin.serialization") version "2.3.20"
 }
 

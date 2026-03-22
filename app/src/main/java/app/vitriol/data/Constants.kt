@@ -49,7 +49,7 @@ internal object Constants {
 
     const val MIN_ANIM_REFRESH_RATE = 10f
 
-    const val URL_ABOUT_VOIDLAUNCHER = "https://github.com/sorathpanzer/vitriol"
+    const val URL_ABOUT_VITRIOL = "https://github.com/sorathpanzer/vitriol"
     const val URL_DUCK_SEARCH = "https://duckduckgo.com?q="
 }
 
