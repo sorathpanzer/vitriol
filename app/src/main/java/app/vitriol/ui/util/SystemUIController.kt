@@ -21,7 +21,7 @@ private class AppLoadingException(
 
 // * Controls system Immersive Mode
 @Composable
-internal fun systemUIController(immersiveMode: Boolean) {
+internal fun SystemUIController(immersiveMode: Boolean) {
     val view = LocalView.current
     val context = LocalContext.current
     val window = remember { (context as? Activity)?.window }

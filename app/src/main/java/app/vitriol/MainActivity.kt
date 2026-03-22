@@ -22,7 +22,7 @@ import app.vitriol.data.repository.SettingsRepository
 import app.vitriol.helper.setPlainWallpaper
 import app.vitriol.ui.UiEvent
 import app.vitriol.ui.viewmodels.SettingsViewModel
-import app.vitriol.ui.vitriolNavigation
+import app.vitriol.ui.VitriolNavigation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -53,8 +53,8 @@ internal class MainActivity : ComponentActivity() {
 
             val resetFailed by viewModel.launcherResetFailed.collectAsStateWithLifecycle(initialValue = false)
 
-            vitriolTheme {
-                vitriolNavigation(
+            VitriolTheme {
+                VitriolNavigation(
                     viewModel = viewModel,
                     settingsViewModel = settingsViewModel,
                     currentScreen = currentScreen,

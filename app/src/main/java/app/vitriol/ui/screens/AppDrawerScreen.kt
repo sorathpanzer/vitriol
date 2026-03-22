@@ -69,7 +69,7 @@ import app.vitriol.MainViewModel
 import app.vitriol.data.AppModel
 import app.vitriol.data.Constants
 import app.vitriol.helper.openSearch
-import app.vitriol.ui.backHandler
+import app.vitriol.ui.BackHandler
 import app.vitriol.ui.util.detectSwipeGestures
 import app.vitriol.ui.viewmodels.SettingsViewModel
 import kotlinx.coroutines.delay
@@ -78,7 +78,7 @@ private const val DELAY_APP_OPEN = 300L
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-internal fun appDrawerScreen(
+internal fun AppDrawerScreen(
     viewModel: MainViewModel,
     settingsViewModel: SettingsViewModel = viewModel(),
     onAppClick: (AppModel) -> Unit,
@@ -86,7 +86,7 @@ internal fun appDrawerScreen(
     selectionTitle: String = "",
     onSwipeDown: () -> Unit,
 ) {
-    backHandler(onBack = onSwipeDown)
+    BackHandler(onBack = onSwipeDown)
 
     val context = LocalContext.current
     val uiState by viewModel.appDrawerState.collectAsState()
@@ -198,7 +198,7 @@ internal fun appDrawerScreen(
             )
         }
 
-        appDrawerSearch(
+        AppDrawerSearch(
             searchQuery = searchQuery,
             onSearchChanged = { query ->
                 searchQuery = query
@@ -270,7 +270,7 @@ internal fun appDrawerScreen(
                         key = { app -> "${app.appPackage}/${app.activityClassName ?: ""}/${app.user.hashCode()}" },
                     ) { app ->
                         if (settings.showAppNames) {
-                            appListItem(
+                            AppListItem(
                                 app = app,
                                 showAppNames = settings.showAppNames,
                                 fontScale = searchResultsFontSize,
@@ -309,19 +309,19 @@ internal fun appDrawerScreen(
             title = { Text(app.appLabel) },
             text = {
                 Column {
-                    contextMenuItem("Open App", Icons.Default.AdsClick) {
+                    ContextMenuItem("Open App", Icons.Default.AdsClick) {
                         handleAppClick(app)
                         showContextMenu = false
                         selectedApp = null
                     }
-                    contextMenuItem(if (hidden) "Unhide App" else "Hide App", Icons.Default.Settings) {
+                    ContextMenuItem(if (hidden) "Unhide App" else "Hide App", Icons.Default.Settings) {
                         viewModel.toggleAppHidden(app)
                         showContextMenu =
                             false
                         selectedApp = null
                     }
-                    contextMenuItem("Rename App", Icons.Default.DriveFileRenameOutline) { renameDialogVisible = true }
-                    contextMenuItem("App Info", Icons.Default.Info) {
+                    ContextMenuItem("Rename App", Icons.Default.DriveFileRenameOutline) { renameDialogVisible = true }
+                    ContextMenuItem("App Info", Icons.Default.Info) {
                         context.startActivity(
                             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                 data = Uri.fromParts("package", app.appPackage, null)
@@ -375,7 +375,7 @@ internal fun appDrawerScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun appListItem(
+private fun AppListItem(
     app: AppModel,
     showAppNames: Boolean,
     fontScale: Float,
@@ -407,7 +407,7 @@ private fun appListItem(
 }
 
 @Composable
-private fun contextMenuItem(
+private fun ContextMenuItem(
     text: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
@@ -422,7 +422,7 @@ private fun contextMenuItem(
 }
 
 @Composable
-private fun appDrawerSearch(
+private fun AppDrawerSearch(
     searchQuery: String,
     onSearchChanged: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -437,10 +437,10 @@ private fun appDrawerSearch(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (showCalculatorResult) {
-            calculatorResultDisplay(searchQuery, calculatorResult)
+            CalculatorResultDisplay(searchQuery, calculatorResult)
         }
 
-        searchTextField(
+        SearchTextField(
             searchQuery = searchQuery,
             onSearchChanged = onSearchChanged,
             onEnterPressed = onEnterPressed,
@@ -451,7 +451,7 @@ private fun appDrawerSearch(
 }
 
 @Composable
-private fun calculatorResultDisplay(
+private fun CalculatorResultDisplay(
     searchQuery: String,
     calculatorResult: String,
 ) {
@@ -477,7 +477,7 @@ private fun calculatorResultDisplay(
 }
 
 @Composable
-private fun searchTextField(
+private fun SearchTextField(
     searchQuery: String,
     onSearchChanged: (String) -> Unit,
     onEnterPressed: () -> Unit,

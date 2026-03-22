@@ -38,11 +38,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import app.vitriol.MainViewModel
 import app.vitriol.data.Constants
 import app.vitriol.data.Navigation
-import app.vitriol.ui.screens.appDrawerScreen
-import app.vitriol.ui.screens.hiddenAppsScreen
-import app.vitriol.ui.screens.homeScreen
-import app.vitriol.ui.screens.settingsScreen
-import app.vitriol.ui.util.systemUIController
+import app.vitriol.ui.screens.AppDrawerScreen
+import app.vitriol.ui.screens.HiddenAppsScreen
+import app.vitriol.ui.screens.HomeScreen
+import app.vitriol.ui.screens.SettingsScreen
+import app.vitriol.ui.util.SystemUIController
 import app.vitriol.ui.viewmodels.SettingsViewModel
 import kotlinx.coroutines.flow.collectLatest
 
@@ -62,7 +62,7 @@ private data class NavigationState(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-internal fun vitriolNavigation(
+internal fun VitriolNavigation(
     viewModel: MainViewModel,
     settingsViewModel: SettingsViewModel,
     currentScreen: String,
@@ -70,7 +70,7 @@ internal fun vitriolNavigation(
 ) {
     val context = LocalContext.current
     val settings by settingsViewModel.settingsState.collectAsState()
-    systemUIController(immersiveMode = settings.immersiveMode)
+    SystemUIController(immersiveMode = settings.immersiveMode)
 
     var currentSelectionType by remember { mutableStateOf<AppSelectionType?>(null) }
 
@@ -119,7 +119,7 @@ internal fun vitriolNavigation(
         settingsViewModel.events.collectLatest(handleEvent)
     }
 
-    navigationContent(
+    NavigationContent(
         controllers = NavigationControllers(viewModel, settingsViewModel),
         state =
             NavigationState(
@@ -133,7 +133,7 @@ internal fun vitriolNavigation(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun navigationContent(
+private fun NavigationContent(
     controllers: NavigationControllers,
     state: NavigationState,
 ) {
@@ -147,7 +147,7 @@ private fun navigationContent(
         Box(modifier = Modifier.fillMaxSize()) {
             when (screen) {
                 Navigation.HOME ->
-                    homeScreen(
+                    HomeScreen(
                         viewModel = controllers.mainViewModel,
                         settingsViewModel = controllers.settingsViewModel,
                         onNavigateToAppDrawer = { state.onScreenChange(Navigation.APP_DRAWER) },
@@ -155,7 +155,7 @@ private fun navigationContent(
                     )
 
                 Navigation.APP_DRAWER ->
-                    appDrawerScreen(
+                    AppDrawerScreen(
                         viewModel = controllers.mainViewModel,
                         settingsViewModel = controllers.settingsViewModel,
                         onAppClick = { app ->
@@ -171,14 +171,14 @@ private fun navigationContent(
                     )
 
                 Navigation.SETTINGS ->
-                    settingsScreen(
+                    SettingsScreen(
                         viewModel = controllers.settingsViewModel,
                         onNavigateBack = { state.onScreenChange(Navigation.HOME) },
                         onNavigateToHiddenApps = { state.onScreenChange(Navigation.HIDDEN_APPS) },
                     )
 
                 Navigation.HIDDEN_APPS ->
-                    hiddenAppsScreen(
+                    HiddenAppsScreen(
                         viewModel = controllers.mainViewModel,
                         onNavigateBack = { state.onScreenChange(Navigation.SETTINGS) },
                     )
@@ -275,7 +275,7 @@ private fun AppSelectionType.toTitle(): String =
     }
 
 @Composable
-internal fun backHandler(
+internal fun BackHandler(
     enabled: Boolean = true,
     onBack: () -> Unit,
 ) {

@@ -36,17 +36,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.vitriol.MainViewModel
 import app.vitriol.data.AppModel
-import app.vitriol.ui.components.appItem
+import app.vitriol.ui.components.AppItem
 
 private const val EFFECT_TWEEN_DELAY = 300
 
 @Composable
-private fun loadingIndicator(modifier: Modifier = Modifier) {
+private fun LoadingIndicator(modifier: Modifier = Modifier) {
     CircularProgressIndicator(modifier = modifier)
 }
 
 @Composable
-private fun emptyHiddenAppsMessage(modifier: Modifier = Modifier) {
+private fun EmptyHiddenAppsMessage(modifier: Modifier = Modifier) {
     AnimatedVisibility(
         visible = true,
         enter = fadeIn(tween(EFFECT_TWEEN_DELAY)) + expandVertically(tween(EFFECT_TWEEN_DELAY)),
@@ -68,7 +68,7 @@ private fun emptyHiddenAppsMessage(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun hiddenAppsList(
+private fun HiddenAppsList(
     hiddenApps: List<AppModel>,
     onLaunch: (AppModel) -> Unit,
     onToggleHidden: (AppModel) -> Unit,
@@ -85,7 +85,7 @@ private fun hiddenAppsList(
                 enter = fadeIn(animationSpec = tween(EFFECT_TWEEN_DELAY)),
                 exit = fadeOut(animationSpec = tween(EFFECT_TWEEN_DELAY)),
             ) {
-                appItem(
+                AppItem(
                     app = app,
                     onClick = { onLaunch(app) },
                     onLongClick = { onToggleHidden(app) },
@@ -98,7 +98,7 @@ private fun hiddenAppsList(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun hiddenAppsScreen(
+internal fun HiddenAppsScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit,
 ) {
@@ -138,10 +138,10 @@ internal fun hiddenAppsScreen(
                     .padding(paddingValues),
         ) {
             when {
-                loading -> loadingIndicator(Modifier.align(Alignment.Center))
-                hiddenApps.isEmpty() -> emptyHiddenAppsMessage(Modifier.align(Alignment.Center))
+                loading -> LoadingIndicator(Modifier.align(Alignment.Center))
+                hiddenApps.isEmpty() -> EmptyHiddenAppsMessage(Modifier.align(Alignment.Center))
                 else ->
-                    hiddenAppsList(
+                    HiddenAppsList(
                         hiddenApps = hiddenApps,
                         onLaunch = viewModel::launchApp,
                         onToggleHidden = viewModel::toggleAppHidden,

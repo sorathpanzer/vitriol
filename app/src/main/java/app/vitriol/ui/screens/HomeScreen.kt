@@ -172,7 +172,7 @@ private fun Modifier.applyGestureHandlers(
         .applyTapGestures(context, viewModel, settings, onNavigateToAppDrawer, onNavigateToSettings)
 
 @Composable
-internal fun homeScreen(
+internal fun HomeScreen(
     viewModel: MainViewModel,
     settingsViewModel: SettingsViewModel,
     onNavigateToAppDrawer: () -> Unit,

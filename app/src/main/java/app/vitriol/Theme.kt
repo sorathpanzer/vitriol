@@ -66,7 +66,7 @@ private val DarkColorScheme: ColorScheme by lazy {
 // Composable Theme
 // ----------------------
 @Composable
-internal fun vitriolTheme(content: @Composable () -> Unit) {
+internal fun VitriolTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
 
     if (!view.isInEditMode) {

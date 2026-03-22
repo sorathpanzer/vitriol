@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 @Composable
-internal fun settingsLockDialog(
+internal fun SettingsLockDialog(
     settingPin: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
@@ -44,17 +44,17 @@ internal fun settingsLockDialog(
                 modifier = Modifier.padding(16.dp).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                dialogTitle(settingPin)
+                DialogTitle(settingPin)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                pinInputField(value = pin, onValueChange = {
+                PinInputField(value = pin, onValueChange = {
                     if (it.length <= 6) pin = it
                     error = ""
                 })
 
                 if (settingPin) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    pinInputField(
+                    PinInputField(
                         label = "Confirm PIN",
                         value = confirmPin,
                         onValueChange = {
@@ -65,11 +65,11 @@ internal fun settingsLockDialog(
                 }
 
                 if (error.isNotEmpty()) {
-                    errorText(error)
+                    ErrorText(error)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                dialogButtons(
+                DialogButtons(
                     onDismiss = onDismiss,
                     onConfirmClick = {
                         error =
@@ -78,7 +78,7 @@ internal fun settingsLockDialog(
                                 settingPin && pin != confirmPin -> "PINs do not match"
                                 else -> {
                                     onConfirm(pin)
-                                    return@dialogButtons
+                                    return@DialogButtons
                                 }
                             }
                     },
@@ -89,7 +89,7 @@ internal fun settingsLockDialog(
 }
 
 @Composable
-private fun dialogTitle(settingPin: Boolean) {
+private fun DialogTitle(settingPin: Boolean) {
     Text(
         text = if (settingPin) "Set PIN" else "Enter PIN",
         style = MaterialTheme.typography.headlineSmall,
@@ -97,7 +97,7 @@ private fun dialogTitle(settingPin: Boolean) {
 }
 
 @Composable
-private fun pinInputField(
+private fun PinInputField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String = "PIN",
@@ -114,7 +114,7 @@ private fun pinInputField(
 }
 
 @Composable
-private fun errorText(error: String) {
+private fun ErrorText(error: String) {
     Text(
         text = error,
         color = MaterialTheme.colorScheme.error,
@@ -124,7 +124,7 @@ private fun errorText(error: String) {
 }
 
 @Composable
-private fun dialogButtons(
+private fun DialogButtons(
     onDismiss: () -> Unit,
     onConfirmClick: () -> Unit,
 ) {

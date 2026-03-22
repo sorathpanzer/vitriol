@@ -67,8 +67,8 @@ import app.vitriol.helper.isVitriolDefault
 import app.vitriol.helper.setPlainWallpaper
 import app.vitriol.ui.AppSelectionType
 import app.vitriol.ui.UiEvent
-import app.vitriol.ui.backHandler
-import app.vitriol.ui.dialogs.settingsLockDialog
+import app.vitriol.ui.BackHandler
+import app.vitriol.ui.dialogs.SettingsLockDialog
 import app.vitriol.ui.viewmodels.SettingsViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -100,7 +100,7 @@ private sealed class SettingsDialog {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun settingsScreen(
+internal fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
     onNavigateBack: () -> Unit,
     onNavigateToHiddenApps: () -> Unit = {},
@@ -123,13 +123,13 @@ internal fun settingsScreen(
     val showLockDialog by viewModel.showLockDialog.collectAsState()
     val settingPin by viewModel.settingPin.collectAsState()
 
-    backHandler(onBack = {
+    BackHandler(onBack = {
         viewModel.resetUnlockState()
         onNavigateBack()
     })
 
     if (showLockDialog) {
-        settingsLockDialog(
+        SettingsLockDialog(
             settingPin = settingPin,
             onDismiss = { viewModel.setShowLockDialog(false) },
             onConfirm = { pin ->
@@ -150,7 +150,7 @@ internal fun settingsScreen(
     currentDialog?.let { dialog ->
         when (dialog) {
             is SettingsDialog.Slider -> {
-                sliderSettingDialog(
+                SliderSettingDialog(
                     title = dialog.annotation.title,
                     currentValue = getCurrentValue(dialog.property, uiState),
                     min = dialog.annotation.min,
@@ -171,7 +171,7 @@ internal fun settingsScreen(
             }
 
             is SettingsDialog.Dropdown -> {
-                dropdownSettingDialog(
+                DropdownSettingDialog(
                     title = dialog.annotation.title,
                     options = dialog.annotation.options.toList(),
                     selectedIndex = dialog.property.get(uiState) as Int,
@@ -259,7 +259,7 @@ internal fun settingsScreen(
         }
 
         if (effectiveLockState) {
-            lockedSettingsView(
+            LockedSettingsView(
                 modifier =
                     Modifier
                         .fillMaxSize()
@@ -269,7 +269,7 @@ internal fun settingsScreen(
             return@Scaffold
         }
 
-        settingsContent(
+        SettingsContent(
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -294,7 +294,7 @@ internal fun settingsScreen(
 }
 
 @Composable
-private fun lockedSettingsView(
+private fun LockedSettingsView(
     modifier: Modifier = Modifier,
     onUnlock: () -> Unit,
 ) {
@@ -349,7 +349,7 @@ private fun lockedSettingsView(
 }
 
 @Composable
-private fun settingsContent(
+private fun SettingsContent(
     modifier: Modifier = Modifier,
     uiState: AppSettings,
     settingsManager: SettingsManager,
@@ -368,9 +368,9 @@ private fun settingsContent(
             val categorySettings = settingsByCategory[category] ?: continue
 
             item {
-                settingsSection(title = category.displayName()) {
+                SettingsSection(title = category.displayName()) {
                     categorySettings.forEach { (property, annotation) ->
-                        settingItem(
+                        SettingItem(
                             property = property,
                             annotation = annotation,
                             uiState = uiState,
@@ -386,8 +386,8 @@ private fun settingsContent(
         }
 
         item {
-            settingsSection(title = "System") {
-                systemSettings(
+            SettingsSection(title = "System") {
+                SystemSettings(
                     context = context,
                     uiState = uiState,
                     viewModel = viewModel,
@@ -399,7 +399,7 @@ private fun settingsContent(
 }
 
 @Composable
-private fun settingItem(
+private fun SettingItem(
     property: KProperty1<AppSettings, *>,
     annotation: Setting,
     uiState: AppSettings,
@@ -414,7 +414,7 @@ private fun settingItem(
     when (annotation.type) {
         SettingType.TOGGLE -> {
             if (property.returnType.classifier == Boolean::class) {
-                toggleSettingItem(
+                ToggleSettingItem(
                     title = annotation.title,
                     description = annotation.description,
                     isChecked = property.get(uiState) as Boolean,
@@ -429,7 +429,7 @@ private fun settingItem(
         }
 
         SettingType.SLIDER -> {
-            sliderSettingItem(
+            SliderSettingItem(
                 property = property,
                 annotation = annotation,
                 uiState = uiState,
@@ -439,7 +439,7 @@ private fun settingItem(
         }
 
         SettingType.DROPDOWN -> {
-            dropdownSettingItem(
+            DropdownSettingItem(
                 property = property,
                 annotation = annotation,
                 uiState = uiState,
@@ -449,7 +449,7 @@ private fun settingItem(
         }
 
         SettingType.BUTTON -> {
-            settingsAction(
+            SettingsAction(
                 title = annotation.title,
                 description = annotation.description.takeIf { it.isNotEmpty() },
                 enabled = isEnabled,
@@ -458,7 +458,7 @@ private fun settingItem(
         }
 
         SettingType.APP_PICKER -> {
-            appPickerSettingItem(
+            AppPickerSettingItem(
                 property = property,
                 annotation = annotation,
                 uiState = uiState,
@@ -470,7 +470,7 @@ private fun settingItem(
 }
 
 @Composable
-private fun toggleSettingItem(
+private fun ToggleSettingItem(
     title: String,
     description: String?,
     isChecked: Boolean,
@@ -510,14 +510,14 @@ private fun toggleSettingItem(
 }
 
 @Composable
-private fun sliderSettingItem(
+private fun SliderSettingItem(
     property: KProperty1<AppSettings, *>,
     annotation: Setting,
     uiState: AppSettings,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    settingsItem(
+    SettingsItem(
         title = annotation.title,
         subtitle =
             when (property.returnType.classifier) {
@@ -532,7 +532,7 @@ private fun sliderSettingItem(
 }
 
 @Composable
-private fun dropdownSettingItem(
+private fun DropdownSettingItem(
     property: KProperty1<AppSettings, *>,
     annotation: Setting,
     uiState: AppSettings,
@@ -560,7 +560,7 @@ private fun dropdownSettingItem(
                 }
             } ?: "Select app"
 
-        settingsItem(
+        SettingsItem(
             title = annotation.title,
             subtitle = if (value == Constants.SwipeAction.APP) "$displayText: $appName" else displayText,
             description = annotation.description.takeIf { it.isNotEmpty() },
@@ -568,7 +568,7 @@ private fun dropdownSettingItem(
             onClick = onClick,
         )
     } else {
-        settingsItem(
+        SettingsItem(
             title = annotation.title,
             subtitle = displayText,
             description = annotation.description.takeIf { it.isNotEmpty() },
@@ -579,7 +579,7 @@ private fun dropdownSettingItem(
 }
 
 @Composable
-private fun appPickerSettingItem(
+private fun AppPickerSettingItem(
     property: KProperty1<AppSettings, *>,
     annotation: Setting,
     uiState: AppSettings,
@@ -592,7 +592,7 @@ private fun appPickerSettingItem(
             is AppPreference -> appPreference.label
             else -> "Not set"
         }
-    settingsItem(
+    SettingsItem(
         title = annotation.title,
         subtitle = appName,
         description = annotation.description.takeIf { it.isNotEmpty() },
@@ -602,13 +602,13 @@ private fun appPickerSettingItem(
 }
 
 @Composable
-private fun systemSettings(
+private fun SystemSettings(
     context: android.content.Context,
     uiState: AppSettings,
     viewModel: SettingsViewModel,
     onNavigateToHiddenApps: () -> Unit,
 ) {
-    settingsItem(
+    SettingsItem(
         title = "Set as Default Launcher",
         subtitle = if (isVitriolDefault(context)) "Vitriol is default" else "Vitriol is not default",
         onClick = {
@@ -618,7 +618,7 @@ private fun systemSettings(
         transparency = if (isVitriolDefault(context)) 0.7f else 1.0f,
     )
 
-    settingsToggle(
+    SettingsToggle(
         title = "Lock Settings",
         description = "Prevent changes to settings without a PIN",
         isChecked = uiState.lockSettings,
@@ -631,12 +631,12 @@ private fun systemSettings(
         },
     )
 
-    settingsItem(
+    SettingsItem(
         title = "Hidden Apps",
         onClick = onNavigateToHiddenApps,
     )
 
-    settingsItem(
+    SettingsItem(
         title = "About Vitriol",
         subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
         onClick = {
@@ -666,7 +666,7 @@ private fun SettingCategory.displayName(): String =
     }
 
 @Composable
-private fun settingsSection(
+private fun SettingsSection(
     title: String,
     content: @Composable () -> Unit,
 ) {
@@ -697,7 +697,7 @@ private fun settingsSection(
 }
 
 @Composable
-private fun settingTextBlock(
+private fun SettingTextBlock(
     title: String,
     subtitle: String? = null,
     description: String? = null,
@@ -735,7 +735,7 @@ private fun settingTextBlock(
 }
 
 @Composable
-private fun settingsItem(
+private fun SettingsItem(
     title: String,
     subtitle: String? = null,
     description: String? = null,
@@ -751,7 +751,7 @@ private fun settingsItem(
                 .padding(vertical = 8.dp)
                 .alpha(if (enabled) transparency else ALPHA),
     ) {
-        settingTextBlock(
+        SettingTextBlock(
             title = title,
             subtitle = subtitle,
             description = description,
@@ -762,7 +762,7 @@ private fun settingsItem(
 }
 
 @Composable
-private fun settingsToggle(
+private fun SettingsToggle(
     title: String,
     description: String? = null,
     isChecked: Boolean,
@@ -780,7 +780,7 @@ private fun settingsToggle(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        settingTextBlock(
+        SettingTextBlock(
             title = title,
             description = description,
             modifier = Modifier.weight(1f),
@@ -795,7 +795,7 @@ private fun settingsToggle(
 }
 
 @Composable
-private fun settingsAction(
+private fun SettingsAction(
     title: String,
     description: String? = null,
     enabled: Boolean = true,
@@ -809,7 +809,7 @@ private fun settingsAction(
                 .alpha(if (enabled) 1f else ALPHA),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        settingTextBlock(
+        SettingTextBlock(
             title = title,
             description = description,
             modifier = Modifier.weight(1f).padding(end = 8.dp),
@@ -833,7 +833,7 @@ private fun settingsAction(
 }
 
 @Composable
-private fun sliderSettingDialog(
+private fun SliderSettingDialog(
     title: String,
     currentValue: Float,
     min: Float,
@@ -875,7 +875,7 @@ private fun sliderSettingDialog(
 }
 
 @Composable
-private fun dropdownSettingDialog(
+private fun DropdownSettingDialog(
     title: String,
     options: List<String>,
     selectedIndex: Int,

@@ -17,7 +17,7 @@ import app.vitriol.data.AppModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun appItem(
+internal fun AppItem(
     modifier: Modifier = Modifier,
     app: AppModel,
     onClick: () -> Unit,
