@@ -40,7 +40,7 @@ internal fun SystemUIController(immersiveMode: Boolean) {
                 controller.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-            } catch (e: Exception) {
+            } catch (e: SecurityException) {
                 Log.e("SystemUIController", "Failed to update system UI", e)
             }
         }

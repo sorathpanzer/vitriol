@@ -110,11 +110,15 @@ internal class AppRepository(
                     null
                 )
     
-            } catch (e: Exception) {
-                // --- 3) If LauncherApps fails, fallback to normal launch ---
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(launchIntent)
-            }
+                } catch (e: SecurityException) {
+                    // log original exception
+                    println("LauncherApps startMainActivity failed: ${e.message}")
+                    e.printStackTrace()
+                
+                    // fallback to normal launch
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(launchIntent)
+                }
         }
     }
 
