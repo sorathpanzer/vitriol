@@ -1,6 +1,7 @@
 package app.vitriol.ui
 
 import android.content.Intent
+import app.vitriol.data.Constants
 
 // * UI Events for navigation and actions
 internal sealed class UiEvent {
@@ -47,17 +48,17 @@ internal sealed class UiEvent {
     object ResetLauncher : UiEvent()
 }
 
-internal enum class AppSelectionType {
-    SWIPE_LEFT_APP,
-    SWIPE_RIGHT_APP,
-    ONE_TAP_APP,
-    DOUBLE_TAP_APP,
-    SWIPE_UP_APP,
-    SWIPE_DOWN_APP,
-    TWOFINGER_SWIPE_UP_APP,
-    TWOFINGER_SWIPE_DOWN_APP,
-    TWOFINGER_SWIPE_LEFT_APP,
-    TWOFINGER_SWIPE_RIGHT_APP,
-    PINCH_IN_APP,
-    PINCH_OUT_APP,
+internal enum class AppSelectionType(val flag: Int, val title: String) {
+    SWIPE_UP_APP(Constants.FLAG_SET_SWIPE_UP_APP, "Select Swipe Up Action App"),
+    SWIPE_DOWN_APP(Constants.FLAG_SET_SWIPE_DOWN_APP, "Select Swipe Down Action App"),
+    SWIPE_LEFT_APP(Constants.FLAG_SET_SWIPE_LEFT_APP, "Select Swipe Left App"),
+    SWIPE_RIGHT_APP(Constants.FLAG_SET_SWIPE_RIGHT_APP, "Select Swipe Right App"),
+    TWOFINGER_SWIPE_UP_APP(Constants.FLAG_SET_TWOFINGER_SWIPE_UP_APP, "Select 2 fingers Swipe Up Action App"),
+    TWOFINGER_SWIPE_DOWN_APP(Constants.FLAG_SET_TWOFINGER_SWIPE_DOWN_APP, "Select 2 fingers Swipe Down Action App"),
+    TWOFINGER_SWIPE_LEFT_APP(Constants.FLAG_SET_TWOFINGER_SWIPE_LEFT_APP, "Select 2 fingers Swipe Left App"),
+    TWOFINGER_SWIPE_RIGHT_APP(Constants.FLAG_SET_TWOFINGER_SWIPE_RIGHT_APP, "Select 2 fingers Swipe Right App"),
+    ONE_TAP_APP(Constants.FLAG_SET_ONE_TAP_APP, "Select One Tap App"),
+    DOUBLE_TAP_APP(Constants.FLAG_SET_DOUBLE_TAP_APP, "Select Double Tap App"),
+    PINCH_IN_APP(Constants.FLAG_SET_PINCH_IN_APP, "Select Pinch In App"),
+    PINCH_OUT_APP(Constants.FLAG_SET_PINCH_OUT_APP, "Select Pinch Out App")
 }
