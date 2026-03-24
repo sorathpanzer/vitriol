@@ -6,43 +6,62 @@ import android.os.Build
 import android.view.accessibility.AccessibilityEvent
 import androidx.annotation.RequiresApi
 import app.vitriol.data.repository.SettingsRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 internal class MyAccessibilityService : AccessibilityService() {
-    private val serviceScope = CoroutineScope(Dispatchers.Main)
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    private val settingsRepository by lazy {
+        SettingsRepository(applicationContext)
+    }
 
     @RequiresApi(Build.VERSION_CODES.P)
-    public override fun onStartCommand(
+    override fun onStartCommand(
         intent: Intent?,
         flags: Int,
         startId: Int,
     ): Int {
         if (intent?.action == "LOCK_SCREEN") {
-            performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+            lockScreenSafely()
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
-    protected override fun onServiceConnected() {
-        serviceScope.launch {
-            val prefsDataStore = SettingsRepository(applicationContext)
-            prefsDataStore.updateSetting { it.copy(lockMode = true) }
-        }
+    override fun onServiceConnected() {
         super.onServiceConnected()
+
+        serviceScope.launch {
+            settingsRepository.updateSetting {
+                it.copy(lockMode = true)
+            }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
-    public override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        try {
-            performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
-        } catch (_: Exception) {
-            return
-        }
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        // ⚠️ Do NOT blindly lock on every event
+        // Only react to specific conditions if needed
     }
 
-    public override fun onInterrupt() {
-        // Not needed
+    override fun onInterrupt() = Unit
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel() // جلوگیری memory leaks
+    }
+
+    // -------------------------
+    // Helpers
+    // -------------------------
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun lockScreenSafely() {
+        try {
+            if (!performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)) {
+                println("Lock screen action failed")
+            }
+        } catch (e: SecurityException) {
+            e.printStackTrace()
+        }
     }
 }
