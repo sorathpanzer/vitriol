@@ -38,15 +38,9 @@ internal class AppRepository(
         withContext(Dispatchers.IO) {
             try {
                 val settings = settingsRepository.settings.first()
-                if (settings.showHiddenAppsOnSearch) {
-                    val apps =
-                        getAppsList(context, settingsRepository, includeRegularApps = true, includeHiddenApps = true)
-                    _appList.value = apps
-                } else {
-                    val apps =
-                        getAppsList(context, settingsRepository, includeRegularApps = true, includeHiddenApps = false)
-                    _appList.value = apps
-                }
+                val apps =
+                    getAppsList(context, settingsRepository, includeRegularApps = true, includeHiddenApps = false)
+                _appList.value = apps
             } catch (e: IOException) {
                 throw AppLoadingException("Failed to load apps", e)
             }

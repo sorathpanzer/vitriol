@@ -59,12 +59,6 @@ internal data class AppSettings(
     )
     val showAppNames: Boolean = false,
     @Setting(
-        title = "Show Hidden in Search",
-        category = SettingCategory.GENERAL,
-        type = SettingType.TOGGLE,
-    )
-    val showHiddenAppsOnSearch: Boolean = false,
-    @Setting(
         title = "Immersive Mode",
         category = SettingCategory.GENERAL,
         type = SettingType.TOGGLE,
@@ -207,7 +201,6 @@ internal class SettingsManager {
     private val orderedSettingNames =
         listOf(
             "showAppNames",
-            "showHiddenAppsOnSearch",
             "immersiveMode",
             "swipeUpAction",
             "swipeUpApp",
@@ -258,7 +251,6 @@ internal class SettingsManager {
     private val updaters: Map<String, (AppSettings, Any) -> AppSettings> =
         mapOf(
             "showAppNames" to { s, v -> s.copy(showAppNames = v as Boolean) },
-            "showHiddenAppsOnSearch" to { s, v -> s.copy(showHiddenAppsOnSearch = v as Boolean) },
             "immersiveMode" to { s, v -> s.copy(immersiveMode = v as Boolean) },
             "searchResultsFontSize" to { s, v -> s.copy(searchResultsFontSize = v as Float) },
             "plainWallpaper" to { s, v -> s.copy(plainWallpaper = v as Boolean) },

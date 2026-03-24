@@ -44,7 +44,6 @@ internal class SettingsRepository(
     companion object {
         // Define all preference keys
         val SHOW_APP_NAMES = booleanPreferencesKey("SHOW_APP_NAMES")
-        val SHOW_HIDDEN_APPS_IN_SEARCH = booleanPreferencesKey("SHOW_HIDDEN_APPS_IN_SEARCH")
         val AUTO_OPEN_FILTERED_APP = booleanPreferencesKey("AUTO_OPEN_FILTERED_APP")
         val APP_THEME = intPreferencesKey("APP_THEME")
         val TEXT_SIZE_SCALE = floatPreferencesKey("TEXT_SIZE_SCALE")
@@ -167,7 +166,6 @@ internal class SettingsRepository(
             AppSettings(
                 // General settings
                 showAppNames = prefs[SHOW_APP_NAMES] ?: false,
-                showHiddenAppsOnSearch = prefs[SHOW_HIDDEN_APPS_IN_SEARCH] ?: false,
                 // Layout settings
                 immersiveMode = prefs[IMMERSIVE_MODE] ?: false,
                 // Gestures settings
@@ -230,7 +228,6 @@ internal class SettingsRepository(
         mapOf(
             // General
             "showAppNames" to { prefs, v -> prefs[SHOW_APP_NAMES] = v as Boolean },
-            "showHiddenAppsOnSearch" to { prefs, v -> prefs[SHOW_HIDDEN_APPS_IN_SEARCH] = v as Boolean },
             // Appearance
             "immersiveMode" to { prefs, v -> prefs[IMMERSIVE_MODE] = v as Boolean },
             "showHomeScreenIcons" to { prefs, v -> prefs[SHOW_HOME_SCREEN_ICONS] = v as Boolean },
