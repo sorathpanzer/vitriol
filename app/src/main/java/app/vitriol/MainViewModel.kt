@@ -69,8 +69,6 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    // --- Restored Logic for UI ---
-
     fun loadApps() {
         viewModelScope.launch {
             _appDrawerState.update { it.copy(loading = true) }
@@ -170,18 +168,35 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
     }
 
     // --- Search & Math ---
-
     fun searchApps(query: String, isEnterPressed: Boolean = false) {
         viewModelScope.launch {
-            _appDrawerState.update { it.copy(showCalculatorResult = false) }
+            _appDrawerState.update { 
+                it.copy(
+                    showCalculatorResult = false,
+                    loading = false   // ✅ FIX
+                )
+            }
+    
             if (isEnterPressed && isMathExpression(query)) {
                 MathEvaluator.evaluate(query)?.let { res ->
-                    _appDrawerState.update { it.copy(calculatorResult = res, showCalculatorResult = true) }
+                    _appDrawerState.update { 
+                        it.copy(
+                            calculatorResult = res,
+                            showCalculatorResult = true
+                        )
+                    }
                     return@launch
                 }
             }
-            val filtered = _appDrawerState.value.apps.filter { it.appLabel.startsWith(query, ignoreCase = true) }
+    
+            val apps = _appDrawerState.value.apps
+    
+            val filtered = apps.filter {
+                it.appLabel.startsWith(query, ignoreCase = true)
+            }
+    
             _appDrawerState.update { it.copy(filteredApps = filtered) }
+    
             if (filtered.size == 1) launchApp(filtered[0])
         }
     }
