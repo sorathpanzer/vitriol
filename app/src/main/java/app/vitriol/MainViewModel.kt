@@ -36,8 +36,6 @@ internal data class AppDrawerUiState(
     val searchQuery: String = "",
     val loading: Boolean = false,
     val error: String? = null,
-    val calculatorResult: String = "",
-    val showCalculatorResult: Boolean = false,
 )
 
 internal class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -172,21 +170,8 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             _appDrawerState.update { 
                 it.copy(
-                    showCalculatorResult = false,
-                    loading = false   // ✅ FIX
+                    loading = false
                 )
-            }
-    
-            if (isEnterPressed && isMathExpression(query)) {
-                MathEvaluator.evaluate(query)?.let { res ->
-                    _appDrawerState.update { 
-                        it.copy(
-                            calculatorResult = res,
-                            showCalculatorResult = true
-                        )
-                    }
-                    return@launch
-                }
             }
     
             val apps = _appDrawerState.value.apps
@@ -201,8 +186,6 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    private fun isMathExpression(input: String) = input.isNotEmpty() && input.matches(Regex("^[\\d\\s+\\-*/^().√!]+$")) && input.any { it.isDigit() }
-    
     fun emitEvent(event: UiEvent) = viewModelScope.launch { _eventsFlow.emit(event) }
 
     fun lockScreen() {
