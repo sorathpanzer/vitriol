@@ -8,16 +8,45 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AdsClick
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -26,23 +55,18 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.vitriol.MainViewModel
 import app.vitriol.data.AppModel
-import app.vitriol.data.Constants
-import app.vitriol.helper.openSearch
 import app.vitriol.ui.BackHandler
 import app.vitriol.ui.util.detectSwipeGestures
 import app.vitriol.ui.viewmodels.SettingsViewModel
@@ -71,7 +95,9 @@ internal fun AppDrawerScreen(
     var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
+
+    val focusManager = LocalSoftwareKeyboardController.current?.let { LocalSoftwareKeyboardController.current } // not needed? keep for safety
+    val scrollState = rememberLazyListState()
 
     var selectedApp by remember { mutableStateOf<AppModel?>(null) }
     var showContextMenu by remember { mutableStateOf(false) }
@@ -79,8 +105,7 @@ internal fun AppDrawerScreen(
     val handleAppClick = remember(viewModel, onAppClick, focusManager, keyboardController) {
         { app: AppModel ->
             searchQuery = ""
-            focusManager.clearFocus()
-            keyboardController?.hide()
+            focusManager?.hide()
             onAppClick(app)
         }
     }
@@ -88,8 +113,6 @@ internal fun AppDrawerScreen(
     LaunchedEffect(Unit) { viewModel.loadApps() }
     LaunchedEffect(searchQuery) { viewModel.searchApps(searchQuery) }
     LaunchedEffect(focusRequester) { focusRequester.requestFocus() }
-
-    val scrollState = rememberLazyListState()
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.isEmpty() &&
@@ -99,7 +122,6 @@ internal fun AppDrawerScreen(
 
     LaunchedEffect(scrollState.isScrollInProgress) {
         if (scrollState.isScrollInProgress) {
-            focusManager.clearFocus()
             keyboardController?.hide()
         }
     }
@@ -131,14 +153,38 @@ internal fun AppDrawerScreen(
 
         val appsToShow = if (searchQuery.isEmpty()) uiState.apps else uiState.filteredApps
 
-        AppDrawerSearch(
-            searchQuery = searchQuery,
-            onSearchChanged = { searchQuery = it },
-            modifier = Modifier.focusRequester(focusRequester),
-            onEnterPressed = { appsToShow.firstOrNull()?.let { handleAppClick(it) } },
-            onFocusStateChanged = { },
-            onSearchAction = { viewModel.searchApps(searchQuery, true) },
-        )
+        // Inline search field directly
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .width(minOf(maxWidth, 600.dp))
+                    .onFocusChanged { if (it.isFocused) keyboardController?.show() },
+                placeholder = {
+                    Text("Search App...", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                },
+                singleLine = true,
+                textStyle = TextStyle(textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {
+                    keyboardController?.hide()
+                    appsToShow.firstOrNull()?.let { handleAppClick(it) }
+                }),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+            )
+        }
 
         LaunchedEffect(searchQuery, appsToShow) {
             if (searchQuery.isNotEmpty() && appsToShow.size == 1) {
@@ -154,7 +200,7 @@ internal fun AppDrawerScreen(
                 Box(Modifier.fillMaxSize(), Alignment.Center) { Text("Error: ${uiState.error}") }
             uiState.apps.isEmpty() && searchQuery.isEmpty() ->
                 Box(Modifier.fillMaxSize(), Alignment.Center) { Text("No apps found") }
-            uiState.filteredApps.isEmpty() && searchQuery.isNotEmpty() -> {
+            uiState.filteredApps.isEmpty() && searchQuery.isNotEmpty() ->
                 Box(Modifier.fillMaxSize(), Alignment.TopCenter) {
                     Button(
                         onClick = { },
@@ -166,7 +212,6 @@ internal fun AppDrawerScreen(
                         Text("No apps found")
                     }
                 }
-            }
             else -> {
                 val visibleApps = if (settings.showAppNames) appsToShow else emptyList()
                 LazyColumn(state = scrollState, modifier = Modifier.fillMaxSize()) {
@@ -290,68 +335,5 @@ private fun ContextMenuItem(text: String, icon: ImageVector, onClick: () -> Unit
     ) {
         Icon(icon, contentDescription = text, modifier = Modifier.padding(end = 16.dp))
         Text(text, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-private fun AppDrawerSearch(
-    searchQuery: String,
-    onSearchChanged: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    onEnterPressed: () -> Unit = {},
-    onFocusStateChanged: (Boolean) -> Unit,
-    onSearchAction: () -> Unit,
-) {
-    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        SearchTextField(
-            searchQuery = searchQuery,
-            onSearchChanged = onSearchChanged,
-            onEnterPressed = onEnterPressed,
-            onFocusStateChanged = onFocusStateChanged,
-            onSearchAction = onSearchAction,
-        )
-    }
-}
-
-@Composable
-private fun SearchTextField(
-    searchQuery: String,
-    onSearchChanged: (String) -> Unit,
-    onEnterPressed: () -> Unit,
-    onFocusStateChanged: (Boolean) -> Unit,
-    onSearchAction: () -> Unit,
-) {
-    val keyboardController = LocalSoftwareKeyboardController.current
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        TextField(
-            value = searchQuery,
-            onValueChange = onSearchChanged,
-            modifier = Modifier
-                .width(minOf(maxWidth, 600.dp))
-                .onFocusChanged {
-                    onFocusStateChanged(it.isFocused)
-                    if (it.isFocused) keyboardController?.show()
-                },
-            placeholder = {
-                Text("Search App...", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            },
-            singleLine = true,
-            textStyle = TextStyle(textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = {
-                keyboardController?.hide()
-                onSearchAction()
-                onEnterPressed()
-            }),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
-        )
     }
 }
