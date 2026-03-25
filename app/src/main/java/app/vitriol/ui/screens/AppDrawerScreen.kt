@@ -47,7 +47,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -104,12 +103,14 @@ internal fun AppDrawerScreen(
     var selectedApp by remember { mutableStateOf<AppModel?>(null) }
     var showContextMenu by remember { mutableStateOf(false) }
 
-    val handleAppClick: (AppModel) -> Unit = { app ->
-        searchQuery = ""
-        viewModel.searchApps("")
-        focusManager.clearFocus()
-        keyboardController?.hide()
-        onAppClick(app)
+    val handleAppClick = remember(viewModel, onAppClick) {
+        { app: AppModel ->
+            searchQuery = ""
+            viewModel.searchApps("")
+            focusManager.clearFocus()
+            keyboardController?.hide()
+            onAppClick(app)
+        }
     }
 
     LaunchedEffect(Unit) { viewModel.loadApps() }
@@ -129,43 +130,10 @@ internal fun AppDrawerScreen(
         }
     }
 
-    LaunchedEffect(scrollState, keyboardController, focusManager, focusRequester, isSearchFocused) {
-        var previousIndex = scrollState.firstVisibleItemIndex
-        var previousOffset = scrollState.firstVisibleItemScrollOffset
-
-        snapshotFlow {
-            Triple(
-                scrollState.firstVisibleItemIndex,
-                scrollState.firstVisibleItemScrollOffset,
-                scrollState.isScrollInProgress,
-            )
-        }.collect { (currentIndex, currentOffset, isScrolling) ->
-            if (isScrolling) {
-                val actualScrollHappened = currentIndex != previousIndex || currentOffset != previousOffset
-                if (actualScrollHappened) {
-                    val verticalScrollDelta =
-                        when {
-                            currentIndex > previousIndex -> 1
-                            currentIndex < previousIndex -> -1
-                            else -> currentOffset - previousOffset
-                        }
-
-                    if (verticalScrollDelta > 0) {
-                        if (isSearchFocused) {
-                            focusManager.clearFocus()
-                        }
-                        keyboardController?.hide()
-                    } else if (verticalScrollDelta < 0) {
-                        if (currentIndex == 0 && currentOffset == 0) {
-                            if (!isSearchFocused) {
-                                focusRequester.requestFocus()
-                            }
-                        }
-                    }
-                }
-            }
-            previousIndex = currentIndex
-            previousOffset = currentOffset
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
         }
     }
 
@@ -219,10 +187,9 @@ internal fun AppDrawerScreen(
         )
 
         val appsToShow = if (searchQuery.isEmpty()) uiState.apps else uiState.filteredApps
-
-        LaunchedEffect(appsToShow, searchQuery, handleAppClick) {
-            delay(DELAY_APP_OPEN)
+        LaunchedEffect(searchQuery, appsToShow) {
             if (searchQuery.isNotEmpty() && appsToShow.size == 1) {
+                delay(DELAY_APP_OPEN)
                 handleAppClick(appsToShow[0])
             }
         }
@@ -296,7 +263,11 @@ internal fun AppDrawerScreen(
     if (showContextMenu && selectedApp != null) {
         val app = selectedApp ?: return
         val hiddenApps by viewModel.hiddenApps.collectAsState()
-        val hidden = hiddenApps.any { it.getKey() == app.getKey() }
+        val hiddenKeys = remember(hiddenApps) {
+            hiddenApps.map { it.getKey() }.toSet()
+        }
+        
+        val hidden = app.getKey() in hiddenKeys
 
         var renameDialogVisible by remember { mutableStateOf(false) }
         var newAppName by remember { mutableStateOf(app.appLabel) }
