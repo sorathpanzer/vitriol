@@ -166,7 +166,7 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
     }
 
     // --- Search & Math ---
-    fun searchApps(query: String, isEnterPressed: Boolean = false) {
+    fun searchApps(query: String) {
         viewModelScope.launch {
             _appDrawerState.update { 
                 it.copy(
