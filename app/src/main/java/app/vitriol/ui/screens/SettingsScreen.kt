@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -92,10 +90,6 @@ private sealed class SettingsDialog {
 
     data class AppPicker(
         val property: KProperty1<AppSettings, *>,
-    ) : SettingsDialog()
-
-    data class ButtonAction(
-        val onAction: () -> Unit,
     ) : SettingsDialog()
 }
 
@@ -220,10 +214,10 @@ internal fun SettingsScreen(
             settingsManager = settingsManager,
             onSettingClick = { property, annotation ->
                 when (annotation.type) {
-                    SettingType.TOGGLE -> Unit // Toggles are handled inline via onToggle, not via dialog.
+                    SettingType.TOGGLE -> Unit
                     SettingType.SLIDER -> currentDialog = SettingsDialog.Slider(property, annotation)
                     SettingType.DROPDOWN -> currentDialog = SettingsDialog.Dropdown(property, annotation)
-                    SettingType.BUTTON -> currentDialog = SettingsDialog.ButtonAction {
+                    SettingType.BUTTON -> {
                         when (property.name) {
                             "plainWallpaper" -> setPlainWallpaper(context, android.R.color.black)
                         }
@@ -280,16 +274,12 @@ private fun SettingsDialogHandler(
                 onOptionSelected = { index ->
                     coroutineScope.launch {
                         callbacks.onUpdate(dialog.property.name, index)
-
-                        if (dialog.property.name.endsWith("Action") &&
-                            index == Constants.SwipeAction.APP
-                        ) {
+                        if (dialog.property.name.endsWith("Action") && index == Constants.SwipeAction.APP) {
                             val appPropertyName = dialog.property.name.replace("Action", "App")
                             val appProperty = AppSettings::class
                                 .members
                                 .filterIsInstance<KProperty1<AppSettings, *>>()
                                 .firstOrNull { it.name == appPropertyName }
-
                             onNavigateToDialog(appProperty?.let { SettingsDialog.AppPicker(it) })
                         } else {
                             onDismiss()
@@ -304,13 +294,6 @@ private fun SettingsDialogHandler(
                 appSelectionTypeFor(dialog.property.name)?.let { selectionType ->
                     callbacks.onEmitEvent(UiEvent.NavigateToAppSelection(selectionType))
                 }
-                onDismiss()
-            }
-        }
-
-        is SettingsDialog.ButtonAction -> {
-            LaunchedEffect(dialog) {
-                dialog.onAction()
                 onDismiss()
             }
         }
@@ -373,7 +356,6 @@ private fun SettingsContent(
 
         for (category in SettingCategory.entries) {
             val categorySettings = settingsByCategory[category] ?: continue
-
             item {
                 SettingsSection(title = category.displayName()) {
                     categorySettings.forEach { (property, annotation) ->
@@ -404,6 +386,8 @@ private fun SettingsContent(
         }
     }
 }
+
+// ... (SettingItem, ToggleSettingItem, SliderSettingItem, etc. remain mostly the same but cleaner)
 
 @Composable
 private fun SettingItem(
@@ -447,7 +431,7 @@ private fun SettingItem(
             )
         }
         SettingType.BUTTON -> {
-            SettingsAction(
+            SettingsItem(  // Now uses the standard item instead of custom SettingsAction
                 title = annotation.title,
                 description = annotation.description.takeIf { it.isNotEmpty() },
                 enabled = isEnabled,
@@ -571,6 +555,7 @@ private fun AppPickerSettingItem(
         is AppPreference -> appPref.label
         else -> "Not set"
     }
+
     SettingsItem(
         title = annotation.title,
         subtitle = appName,
@@ -593,8 +578,9 @@ private fun SystemSettings(
         onClick = {
             context.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
         },
-        transparency = if (isVitriolDefault(context)) 0.7f else 1.0f,
+        enabled = true,
     )
+
     SettingsToggle(
         title = "Lock Settings",
         description = "Prevent changes to settings without a PIN",
@@ -604,7 +590,9 @@ private fun SystemSettings(
             else viewModel.toggleLockSettings(false)
         },
     )
+
     SettingsItem(title = "Hidden Apps", onClick = onNavigateToHiddenApps)
+
     SettingsItem(
         title = "About Vitriol",
         subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
@@ -618,6 +606,7 @@ private fun SystemSettings(
     )
 }
 
+// Extension functions
 private fun KProperty1<AppSettings, *>.currentFloatValue(state: AppSettings): Float =
     when (returnType.classifier) {
         Int::class -> (get(state) as Int).toFloat()
@@ -628,6 +617,7 @@ private fun KProperty1<AppSettings, *>.currentFloatValue(state: AppSettings): Fl
 private fun SettingCategory.displayName(): String =
     name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
+// Reusable UI components
 @Composable
 private fun SettingsSection(
     title: String,
@@ -657,22 +647,22 @@ private fun SettingTextBlock(
     title: String,
     subtitle: String? = null,
     description: String? = null,
-    titleStyle: TextStyle = MaterialTheme.typography.bodyLarge,
-    subtitleStyle: TextStyle = MaterialTheme.typography.bodyMedium,
-    descriptionStyle: TextStyle = MaterialTheme.typography.bodySmall,
     enabled: Boolean = true,
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
-
     Column(modifier = modifier) {
-        Text(text = title, style = titleStyle, color = onSurface.copy(alpha = if (enabled) 1f else 0.5f))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = onSurface.copy(alpha = if (enabled) 1f else 0.5f)
+        )
         subtitle?.let {
-            Text(text = it, style = subtitleStyle, color = onSurface.copy(alpha = 0.7f))
+            Text(text = it, style = MaterialTheme.typography.bodyMedium, color = onSurface.copy(alpha = 0.7f))
         }
         description?.let {
             Text(
                 text = it,
-                style = descriptionStyle,
+                style = MaterialTheme.typography.bodySmall,
                 color = onSurface.copy(alpha = if (enabled) 0.5f else 0.3f),
                 modifier = Modifier.padding(top = 4.dp),
             )
@@ -687,14 +677,13 @@ private fun SettingsItem(
     description: String? = null,
     enabled: Boolean = true,
     onClick: () -> Unit,
-    transparency: Float = 1f,
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 8.dp)
-            .alpha(if (enabled) transparency else ALPHA),
+            .alpha(if (enabled) 1f else ALPHA),
     ) {
         SettingTextBlock(
             title = title,
@@ -723,44 +712,13 @@ private fun SettingsToggle(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SettingTextBlock(title = title, description = description, modifier = Modifier.weight(1f), enabled = enabled)
-        Switch(checked = isChecked, onCheckedChange = onCheckedChange, enabled = enabled)
-    }
-}
-
-@Composable
-private fun SettingsAction(
-    title: String,
-    description: String? = null,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .alpha(if (enabled) 1f else ALPHA),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
         SettingTextBlock(
             title = title,
             description = description,
-            modifier = Modifier.weight(1f).padding(end = 8.dp),
-            enabled = enabled,
+            modifier = Modifier.weight(1f),
+            enabled = enabled
         )
-        Button(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier.padding(start = 8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-        ) {
-            Text("Set")
-        }
+        Switch(checked = isChecked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 
