@@ -5,36 +5,31 @@
 -dontwarn androidx.annotation.**
 
 # Keep Kotlin metadata for reflection and serialization
--keep class kotlin.Metadata { *; }
+-keepnames class kotlin.Metadata { *; }
 -keepclassmembers class kotlin.Metadata { *; }
--keep class kotlin.reflect.** { *; }
--keep class kotlin.jvm.internal.** { *; }
+-keepnames class kotlin.reflect.** { *; }
+-keepnames class kotlin.jvm.internal.** { *; }
 
 # Keep Parcelable implementations (needed for Android)
--keep class * implements android.os.Parcelable {
+-keepnames class * implements android.os.Parcelable {
     public static final android.os.Parcelable$Creator *;
 }
 
 # --- Keep your app's specific classes for reflection and serialization ---
 
 # Keep your app settings data classes and annotations
--keep class app.vitriol.data.settings.AppSettings { *; }
+-keepnames class app.vitriol.data.settings.AppSettings { *; }
 -keepclassmembers class app.vitriol.data.settings.AppSettings { *; }
--keep @app.vitriol.data.settings.Setting class * { *; }
+-keepnames @app.vitriol.data.settings.Setting class * { *; }
 -keepclasseswithmembers class * {
     @app.vitriol.data.settings.Setting <fields>;
 }
 
--keepclassmembers class app.vitriol.data.settings.AppSettings {
-    <fields>;
-    <methods>;
-}
-
--keep class app.vitriol.data.settings.SettingsManager { *; }
--keep class app.vitriol.ui.screens.SettingsScreenKt { *; }
+-keepnames class app.vitriol.data.settings.SettingsManager { *; }
+-keepnames class app.vitriol.ui.screens.SettingsScreenKt { *; }
 
 # Keep all Setting annotations and enums used in annotations
--keep @interface app.vitriol.data.settings.Setting
+-keepnames @interface app.vitriol.data.settings.Setting
 -keepclassmembers enum app.vitriol.data.settings.SettingCategory { *; }
 -keepclassmembers enum app.vitriol.data.settings.SettingType { *; }
 
