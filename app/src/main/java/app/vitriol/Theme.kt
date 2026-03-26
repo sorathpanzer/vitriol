@@ -10,29 +10,39 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// ----------------------
+// Declarar todas as cores num mapa imutável
+// ----------------------
 private val AppColors: Map<String, Color> by lazy {
     mapOf(
         "black" to Color(0xFF000000),
-        "darkGray2" to Color(0xFF1E1E1E),
+        "darkGray1" to Color(0xFF1D1D1D),
         "lightGray" to Color(0xFFE0E0E0),
         "lightBlue" to Color(0xFF90CAF9),
     )
 }
 
+// ----------------------
+// Função pura que gera o esquema de cores
+// ----------------------
 private fun buildDarkColorScheme(colors: Map<String, Color>): ColorScheme =
     darkColorScheme(
         primary = colors.getValue("lightBlue"),
         onPrimary = colors.getValue("black"),
-        primaryContainer = colors.getValue("darkGray2"),
         onPrimaryContainer = colors.getValue("lightGray"),
+        surface = colors.getValue("darkGray1"),
     )
 
+// ----------------------
 // ColorScheme lazy (só construído quando usado)
+// ----------------------
 private val DarkColorScheme: ColorScheme by lazy {
     buildDarkColorScheme(AppColors)
 }
 
+// ----------------------
 // Composable Theme
+// ----------------------
 @Composable
 internal fun VitriolTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
