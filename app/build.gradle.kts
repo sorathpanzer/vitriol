@@ -1,10 +1,10 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application")
+    id("com.android.application") version libs.versions.androidGradlePlugin.get()
     id("org.jetbrains.kotlin.plugin.compose")
-    id("io.gitlab.arturbosch.detekt") version "1.23.6"
-    kotlin("plugin.serialization") version "2.3.20"
+    id("io.gitlab.arturbosch.detekt") version libs.versions.detekt.get()
+    kotlin("plugin.serialization") version libs.versions.kotlin.get()
 }
 
 android {
