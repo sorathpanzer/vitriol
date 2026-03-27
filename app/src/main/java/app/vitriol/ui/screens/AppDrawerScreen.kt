@@ -23,8 +23,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdsClick
-import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -249,11 +248,10 @@ internal fun AppDrawerScreen(
             title = { Text(app.appLabel) },
             text = {
                 Column {
-                    ContextMenuItem("Open App", Icons.Default.AdsClick) { handleAppClick(app); dismiss() }
                     ContextMenuItem(if (hidden) "Unhide App" else "Hide App", Icons.Default.Settings) {
                         viewModel.toggleAppHidden(app); dismiss()
                     }
-                    ContextMenuItem("Rename App", Icons.Default.DriveFileRenameOutline) { renameDialogVisible = true }
+                    ContextMenuItem("Rename App", Icons.Default.Edit) { renameDialogVisible = true }
                     ContextMenuItem("App Info", Icons.Default.Info) {
                         context.startActivity(
                             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {

@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import net.objecthunter.exp4j.ExpressionBuilder
 import java.io.IOException
 
 internal data class AppDrawerUiState(
@@ -197,12 +196,4 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
         label = appLabel, packageName = appPackage,
         activityClassName = activityClassName, userString = user.toString()
     )
-
-    private object MathEvaluator {
-        fun evaluate(expression: String): String? = try {
-            val clean = expression.replace("×", "*").replace("÷", "/").replace("√", "sqrt")
-            val res = ExpressionBuilder(clean).build().evaluate()
-            if (res % 1 == 0.0) res.toInt().toString() else "%.6f".format(res).replace(Regex("\\.?0+$"), "")
-        } catch (e: Exception) { null }
-    }
 }

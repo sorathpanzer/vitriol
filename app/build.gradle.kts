@@ -151,9 +151,8 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.material.icons.core)
     implementation(libs.material3)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
-    implementation(libs.exp4j)
 }
