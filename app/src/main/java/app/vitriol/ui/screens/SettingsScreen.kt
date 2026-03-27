@@ -3,17 +3,7 @@ package app.vitriol.ui.screens
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -59,56 +49,45 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import app.vitriol.data.Constants
 import app.vitriol.data.settings.AppPreference
 import app.vitriol.data.settings.AppSettings
-import app.vitriol.data.settings.Setting
 import app.vitriol.data.settings.SettingCategory
 import app.vitriol.data.settings.SettingType
 import app.vitriol.data.settings.SettingsManager
+import app.vitriol.data.settings.SettingDescriptor
+import app.vitriol.data.settings.SettingValueType
 import app.vitriol.helper.isVitriolDefault
 import app.vitriol.helper.setPlainWallpaper
 import app.vitriol.ui.AppSelectionType
-import app.vitriol.ui.UiEvent
 import app.vitriol.ui.BackHandler
+import app.vitriol.ui.UiEvent
 import app.vitriol.ui.dialogs.SettingsLockDialog
 import app.vitriol.ui.viewmodels.SettingsViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
-import kotlin.reflect.KProperty1
 
 private const val MAX_SIZE_FILL = 0.8f
 private const val ALPHA = 0.5f
 
 private sealed class SettingsDialog {
-    data class Slider(
-        val property: KProperty1<AppSettings, *>,
-        val annotation: Setting,
-    ) : SettingsDialog()
-
-    data class Dropdown(
-        val property: KProperty1<AppSettings, *>,
-        val annotation: Setting,
-    ) : SettingsDialog()
-
-    data class AppPicker(
-        val property: KProperty1<AppSettings, *>,
-    ) : SettingsDialog()
+    data class Slider(val descriptor: SettingDescriptor) : SettingsDialog()
+    data class Dropdown(val descriptor: SettingDescriptor) : SettingsDialog()
+    data class AppPicker(val descriptor: SettingDescriptor) : SettingsDialog()
 }
 
-private fun appSelectionTypeFor(propertyName: String): AppSelectionType? =
-    when (propertyName) {
-        "swipeLeftApp" -> AppSelectionType.SWIPE_LEFT_APP
-        "swipeRightApp" -> AppSelectionType.SWIPE_RIGHT_APP
-        "oneTapApp" -> AppSelectionType.ONE_TAP_APP
-        "doubleTapApp" -> AppSelectionType.DOUBLE_TAP_APP
-        "swipeUpApp" -> AppSelectionType.SWIPE_UP_APP
-        "swipeDownApp" -> AppSelectionType.SWIPE_DOWN_APP
-        "twoFingerSwipeUpApp" -> AppSelectionType.TWOFINGER_SWIPE_UP_APP
-        "twoFingerSwipeDownApp" -> AppSelectionType.TWOFINGER_SWIPE_DOWN_APP
-        "twoFingerSwipeLeftApp" -> AppSelectionType.TWOFINGER_SWIPE_LEFT_APP
-        "twoFingerSwipeRightApp" -> AppSelectionType.TWOFINGER_SWIPE_RIGHT_APP
-        "pinchInApp" -> AppSelectionType.PINCH_IN_APP
-        "pinchOutApp" -> AppSelectionType.PINCH_OUT_APP
-        else -> null
-    }
+private fun appSelectionTypeFor(name: String): AppSelectionType? = when (name) {
+    "swipeLeftApp" -> AppSelectionType.SWIPE_LEFT_APP
+    "swipeRightApp" -> AppSelectionType.SWIPE_RIGHT_APP
+    "oneTapApp" -> AppSelectionType.ONE_TAP_APP
+    "doubleTapApp" -> AppSelectionType.DOUBLE_TAP_APP
+    "swipeUpApp" -> AppSelectionType.SWIPE_UP_APP
+    "swipeDownApp" -> AppSelectionType.SWIPE_DOWN_APP
+    "twoFingerSwipeUpApp" -> AppSelectionType.TWOFINGER_SWIPE_UP_APP
+    "twoFingerSwipeDownApp" -> AppSelectionType.TWOFINGER_SWIPE_DOWN_APP
+    "twoFingerSwipeLeftApp" -> AppSelectionType.TWOFINGER_SWIPE_LEFT_APP
+    "twoFingerSwipeRightApp" -> AppSelectionType.TWOFINGER_SWIPE_RIGHT_APP
+    "pinchInApp" -> AppSelectionType.PINCH_IN_APP
+    "pinchOutApp" -> AppSelectionType.PINCH_OUT_APP
+    else -> null
+}
 
 private data class SettingCallbacks(
     val onUpdate: suspend (String, Any) -> Unit,
@@ -127,12 +106,9 @@ internal fun SettingsScreen(
     val uiState by viewModel.settingsState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val settingsManager = remember { SettingsManager() }
-
     var currentDialog by remember { mutableStateOf<SettingsDialog?>(null) }
 
-    DisposableEffect(Unit) {
-        onDispose { viewModel.resetUnlockState() }
-    }
+    DisposableEffect(Unit) { onDispose { viewModel.resetUnlockState() } }
 
     val effectiveLockState by viewModel.effectiveLockState.collectAsState()
     val showLockDialog by viewModel.showLockDialog.collectAsState()
@@ -153,9 +129,7 @@ internal fun SettingsScreen(
                     viewModel.toggleLockSettings(true)
                     viewModel.setShowLockDialog(false)
                 } else {
-                    if (viewModel.validatePin(pin)) {
-                        viewModel.setShowLockDialog(false)
-                    }
+                    if (viewModel.validatePin(pin)) viewModel.setShowLockDialog(false)
                 }
             },
         )
@@ -172,6 +146,7 @@ internal fun SettingsScreen(
     SettingsDialogHandler(
         dialog = currentDialog,
         uiState = uiState,
+        settingsManager = settingsManager,
         callbacks = callbacks,
         coroutineScope = coroutineScope,
         onDismiss = { currentDialog = null },
@@ -184,22 +159,18 @@ internal fun SettingsScreen(
                 title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
             )
         },
     ) { paddingValues ->
         if (viewModel.loading.value) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
             return@Scaffold
         }
-
         if (effectiveLockState) {
             LockedSettingsView(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
@@ -207,22 +178,20 @@ internal fun SettingsScreen(
             )
             return@Scaffold
         }
-
         SettingsContent(
             modifier = Modifier.fillMaxSize().padding(paddingValues),
             uiState = uiState,
             settingsManager = settingsManager,
-            onSettingClick = { property, annotation ->
-                when (annotation.type) {
+            onSettingClick = { descriptor ->
+                when (descriptor.type) {
                     SettingType.TOGGLE -> Unit
-                    SettingType.SLIDER -> currentDialog = SettingsDialog.Slider(property, annotation)
-                    SettingType.DROPDOWN -> currentDialog = SettingsDialog.Dropdown(property, annotation)
+                    SettingType.SLIDER -> currentDialog = SettingsDialog.Slider(descriptor)
+                    SettingType.DROPDOWN -> currentDialog = SettingsDialog.Dropdown(descriptor)
                     SettingType.BUTTON -> {
-                        when (property.name) {
-                            "plainWallpaper" -> setPlainWallpaper(context, android.R.color.black)
-                        }
+                        if (descriptor.name == "plainWallpaper")
+                            setPlainWallpaper(context, android.R.color.black)
                     }
-                    SettingType.APP_PICKER -> currentDialog = SettingsDialog.AppPicker(property)
+                    SettingType.APP_PICKER -> currentDialog = SettingsDialog.AppPicker(descriptor)
                 }
             },
             viewModel = viewModel,
@@ -237,50 +206,52 @@ internal fun SettingsScreen(
 private fun SettingsDialogHandler(
     dialog: SettingsDialog?,
     uiState: AppSettings,
+    settingsManager: SettingsManager,
     callbacks: SettingCallbacks,
     coroutineScope: kotlinx.coroutines.CoroutineScope,
     onDismiss: () -> Unit,
     onNavigateToDialog: (SettingsDialog?) -> Unit,
 ) {
     dialog ?: return
-
     when (dialog) {
         is SettingsDialog.Slider -> {
+            val currentFloat = when (dialog.descriptor.valueType) {
+                SettingValueType.INT -> (uiState.getValue(dialog.descriptor.name) as Int).toFloat()
+                SettingValueType.FLOAT -> uiState.getValue(dialog.descriptor.name) as Float
+                else -> 0f
+            }
             SliderSettingDialog(
-                title = dialog.annotation.title,
-                currentValue = dialog.property.currentFloatValue(uiState),
-                min = dialog.annotation.min,
-                max = dialog.annotation.max,
-                step = dialog.annotation.step,
+                title = dialog.descriptor.title,
+                currentValue = currentFloat,
+                min = dialog.descriptor.min,
+                max = dialog.descriptor.max,
+                step = dialog.descriptor.step,
                 onDismiss = onDismiss,
                 onValueSelected = { newValue ->
                     coroutineScope.launch {
-                        val propertyName = dialog.property.name
-                        when (dialog.property.returnType.classifier) {
-                            Int::class -> callbacks.onUpdate(propertyName, newValue.toInt())
-                            Float::class -> callbacks.onUpdate(propertyName, newValue)
+                        when (dialog.descriptor.valueType) {
+                            SettingValueType.INT -> callbacks.onUpdate(dialog.descriptor.name, newValue.toInt())
+                            SettingValueType.FLOAT -> callbacks.onUpdate(dialog.descriptor.name, newValue)
+                            else -> Unit
                         }
                     }
                 },
             )
         }
-
         is SettingsDialog.Dropdown -> {
             DropdownSettingDialog(
-                title = dialog.annotation.title,
-                options = dialog.annotation.options.toList(),
-                selectedIndex = dialog.property.get(uiState) as Int,
+                title = dialog.descriptor.title,
+                options = dialog.descriptor.options,
+                selectedIndex = uiState.getValue(dialog.descriptor.name) as Int,
                 onDismiss = onDismiss,
                 onOptionSelected = { index ->
                     coroutineScope.launch {
-                        callbacks.onUpdate(dialog.property.name, index)
-                        if (dialog.property.name.endsWith("Action") && index == Constants.SwipeAction.APP) {
-                            val appPropertyName = dialog.property.name.replace("Action", "App")
-                            val appProperty = AppSettings::class
-                                .members
-                                .filterIsInstance<KProperty1<AppSettings, *>>()
-                                .firstOrNull { it.name == appPropertyName }
-                            onNavigateToDialog(appProperty?.let { SettingsDialog.AppPicker(it) })
+                        callbacks.onUpdate(dialog.descriptor.name, index)
+                        if (dialog.descriptor.name.endsWith("Action") && index == Constants.SwipeAction.APP) {
+                            val appName = dialog.descriptor.name.replace("Action", "App")
+                            val appDescriptor = settingsManager.appPickerDescriptors[appName]
+                            onNavigateToDialog(appDescriptor?.let { SettingsDialog.AppPicker(it) })
+                            // DO NOT call onDismiss() here — onNavigateToDialog replaces the dialog
                         } else {
                             onDismiss()
                         }
@@ -288,53 +259,57 @@ private fun SettingsDialogHandler(
                 },
             )
         }
-
+        // is SettingsDialog.Dropdown -> {
+        //     DropdownSettingDialog(
+        //         title = dialog.descriptor.title,
+        //         options = dialog.descriptor.options,
+        //         selectedIndex = uiState.getValue(dialog.descriptor.name) as Int,
+        //         onDismiss = onDismiss,
+        //         onOptionSelected = { index ->
+        //             coroutineScope.launch {
+        //                 callbacks.onUpdate(dialog.descriptor.name, index)
+        //                 if (dialog.descriptor.name.endsWith("Action") && index == Constants.SwipeAction.APP) {
+        //                     val appName = dialog.descriptor.name.replace("Action", "App")
+        //                     val appDescriptor = settingsManager.allDescriptors.find { it.name == appName }
+        //                     onNavigateToDialog(appDescriptor?.let { SettingsDialog.AppPicker(it) })
+        //                 } else {
+        //                     onDismiss()
+        //                 }
+        //             }
+        //         },
+        //     )
+        // }
         is SettingsDialog.AppPicker -> {
-            LaunchedEffect(dialog) {
-                appSelectionTypeFor(dialog.property.name)?.let { selectionType ->
+            LaunchedEffect(dialog.descriptor.name) {
+                appSelectionTypeFor(dialog.descriptor.name)?.let { selectionType ->
                     callbacks.onEmitEvent(UiEvent.NavigateToAppSelection(selectionType))
                 }
                 onDismiss()
             }
         }
+        // is SettingsDialog.AppPicker -> {
+        //     LaunchedEffect(dialog) {
+        //         appSelectionTypeFor(dialog.descriptor.name)?.let { selectionType ->
+        //             callbacks.onEmitEvent(UiEvent.NavigateToAppSelection(selectionType))
+        //         }
+        //         onDismiss()
+        //     }
+        // }
     }
 }
 
 @Composable
-private fun LockedSettingsView(
-    modifier: Modifier = Modifier,
-    onUnlock: () -> Unit,
-) {
+private fun LockedSettingsView(modifier: Modifier = Modifier, onUnlock: () -> Unit) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Card(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(MAX_SIZE_FILL),
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Settings Locked",
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Settings are locked",
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Enter your PIN to access settings",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth()) {
-                    Text("Unlock Settings")
-                }
+        Card(modifier = Modifier.padding(16.dp).fillMaxWidth(MAX_SIZE_FILL)) {
+            Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Lock, contentDescription = "Settings Locked", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(16.dp))
+                Text("Settings are locked", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(8.dp))
+                Text("Enter your PIN to access settings", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth()) { Text("Unlock Settings") }
             }
         }
     }
@@ -345,7 +320,7 @@ private fun SettingsContent(
     modifier: Modifier = Modifier,
     uiState: AppSettings,
     settingsManager: SettingsManager,
-    onSettingClick: (KProperty1<AppSettings, *>, Setting) -> Unit,
+    onSettingClick: (SettingDescriptor) -> Unit,
     viewModel: SettingsViewModel,
     context: android.content.Context,
     coroutineScope: kotlinx.coroutines.CoroutineScope,
@@ -353,15 +328,13 @@ private fun SettingsContent(
 ) {
     LazyColumn(modifier = modifier) {
         val settingsByCategory = settingsManager.getSettingsByCategory()
-
         for (category in SettingCategory.entries) {
             val categorySettings = settingsByCategory[category] ?: continue
             item {
                 SettingsSection(title = category.displayName()) {
-                    categorySettings.forEach { (property, annotation) ->
+                    categorySettings.forEach { descriptor ->
                         SettingItem(
-                            property = property,
-                            annotation = annotation,
+                            descriptor = descriptor,
                             uiState = uiState,
                             settingsManager = settingsManager,
                             onSettingClick = onSettingClick,
@@ -373,246 +346,85 @@ private fun SettingsContent(
                 }
             }
         }
-
         item {
             SettingsSection(title = "System") {
-                SystemSettings(
-                    context = context,
-                    uiState = uiState,
-                    viewModel = viewModel,
-                    onNavigateToHiddenApps = onNavigateToHiddenApps,
-                )
+                SystemSettings(context, uiState, viewModel, onNavigateToHiddenApps)
             }
         }
     }
 }
-
-// ... (SettingItem, ToggleSettingItem, SliderSettingItem, etc. remain mostly the same but cleaner)
 
 @Composable
 private fun SettingItem(
-    property: KProperty1<AppSettings, *>,
-    annotation: Setting,
+    descriptor: SettingDescriptor,
     uiState: AppSettings,
     settingsManager: SettingsManager,
-    onSettingClick: (KProperty1<AppSettings, *>, Setting) -> Unit,
+    onSettingClick: (SettingDescriptor) -> Unit,
     onToggle: (String, Boolean) -> Unit,
 ) {
-    val isEnabled = settingsManager.isSettingEnabled(uiState, annotation)
-
-    when (annotation.type) {
+    val isEnabled = settingsManager.isSettingEnabled(uiState, descriptor)
+    val value = uiState.getValue(descriptor.name)
+    when (descriptor.type) {
         SettingType.TOGGLE -> {
-            if (property.returnType.classifier == Boolean::class) {
-                ToggleSettingItem(
-                    title = annotation.title,
-                    description = annotation.description,
-                    isChecked = property.get(uiState) as Boolean,
-                    enabled = isEnabled,
-                    onCheckedChange = { checked -> onToggle(property.name, checked) },
-                )
-            }
+            ToggleSettingItem(
+                title = descriptor.title,
+                description = descriptor.description.takeIf { it.isNotEmpty() },
+                isChecked = value as Boolean,
+                enabled = isEnabled,
+                onCheckedChange = { checked -> onToggle(descriptor.name, checked) },
+            )
         }
         SettingType.SLIDER -> {
-            SliderSettingItem(
-                property = property,
-                annotation = annotation,
-                uiState = uiState,
+            val subtitle = when (descriptor.valueType) {
+                SettingValueType.INT -> "${value as Int}"
+                SettingValueType.FLOAT -> String.format(Locale.getDefault(), "%.1f", value as Float)
+                else -> ""
+            }
+            SettingsItem(
+                title = descriptor.title,
+                subtitle = subtitle,
+                description = descriptor.description.takeIf { it.isNotEmpty() },
                 enabled = isEnabled,
-                onClick = { onSettingClick(property, annotation) },
+                onClick = { onSettingClick(descriptor) },
             )
         }
         SettingType.DROPDOWN -> {
-            DropdownSettingItem(
-                property = property,
-                annotation = annotation,
-                uiState = uiState,
+            val index = value as Int
+            val displayText = descriptor.options.getOrNull(index) ?: "Unknown"
+            val subtitle = if (descriptor.name.endsWith("Action")) {
+                val appName = descriptor.name.replace("Action", "App")
+                val appValue = uiState.getValue(appName) as? AppPreference
+                if (index == Constants.SwipeAction.APP) "$displayText: ${appValue?.label ?: "Select app"}"
+                else displayText
+            } else displayText
+            SettingsItem(
+                title = descriptor.title,
+                subtitle = subtitle,
+                description = descriptor.description.takeIf { it.isNotEmpty() },
                 enabled = isEnabled,
-                onClick = { onSettingClick(property, annotation) },
+                onClick = { onSettingClick(descriptor) },
             )
         }
         SettingType.BUTTON -> {
-            SettingsItem(  // Now uses the standard item instead of custom SettingsAction
-                title = annotation.title,
-                description = annotation.description.takeIf { it.isNotEmpty() },
+            SettingsItem(
+                title = descriptor.title,
+                description = descriptor.description.takeIf { it.isNotEmpty() },
                 enabled = isEnabled,
-                onClick = { onSettingClick(property, annotation) },
+                onClick = { onSettingClick(descriptor) },
             )
         }
         SettingType.APP_PICKER -> {
-            AppPickerSettingItem(
-                property = property,
-                annotation = annotation,
-                uiState = uiState,
+            val appName = (value as? AppPreference)?.label ?: "Not set"
+            SettingsItem(
+                title = descriptor.title,
+                subtitle = appName,
+                description = descriptor.description.takeIf { it.isNotEmpty() },
                 enabled = isEnabled,
-                onClick = { onSettingClick(property, annotation) },
+                onClick = { onSettingClick(descriptor) },
             )
         }
     }
 }
-
-@Composable
-private fun ToggleSettingItem(
-    title: String,
-    description: String?,
-    isChecked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!isChecked) }
-            .padding(16.dp)
-            .alpha(if (enabled) 1f else ALPHA),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            description?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-        }
-        Switch(checked = isChecked, onCheckedChange = onCheckedChange, enabled = enabled)
-    }
-}
-
-@Composable
-private fun SliderSettingItem(
-    property: KProperty1<AppSettings, *>,
-    annotation: Setting,
-    uiState: AppSettings,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    SettingsItem(
-        title = annotation.title,
-        subtitle = when (property.returnType.classifier) {
-            Int::class -> "${property.get(uiState) as Int}"
-            Float::class -> String.format(Locale.getDefault(), "%.1f", property.get(uiState) as Float)
-            else -> ""
-        },
-        description = annotation.description.takeIf { it.isNotEmpty() },
-        enabled = enabled,
-        onClick = onClick,
-    )
-}
-
-@Composable
-private fun DropdownSettingItem(
-    property: KProperty1<AppSettings, *>,
-    annotation: Setting,
-    uiState: AppSettings,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val options = annotation.options
-    val value = property.get(uiState) as Int
-    val displayText = options.getOrNull(value) ?: "Unknown"
-
-    val subtitle = if (property.name.endsWith("Action")) {
-        val appPropertyName = property.name.replace("Action", "App")
-        val appProperty = AppSettings::class
-            .members
-            .filterIsInstance<KProperty1<AppSettings, *>>()
-            .firstOrNull { it.name == appPropertyName }
-
-        val appName = appProperty?.let {
-            when (val appPref = it.get(uiState)) {
-                is AppPreference -> appPref.label
-                else -> "Select app"
-            }
-        } ?: "Select app"
-
-        if (value == Constants.SwipeAction.APP) "$displayText: $appName" else displayText
-    } else {
-        displayText
-    }
-
-    SettingsItem(
-        title = annotation.title,
-        subtitle = subtitle,
-        description = annotation.description.takeIf { it.isNotEmpty() },
-        enabled = enabled,
-        onClick = onClick,
-    )
-}
-
-@Composable
-private fun AppPickerSettingItem(
-    property: KProperty1<AppSettings, *>,
-    annotation: Setting,
-    uiState: AppSettings,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val appName = when (val appPref = property.get(uiState)) {
-        is AppPreference -> appPref.label
-        else -> "Not set"
-    }
-
-    SettingsItem(
-        title = annotation.title,
-        subtitle = appName,
-        description = annotation.description.takeIf { it.isNotEmpty() },
-        enabled = enabled,
-        onClick = onClick,
-    )
-}
-
-@Composable
-private fun SystemSettings(
-    context: android.content.Context,
-    uiState: AppSettings,
-    viewModel: SettingsViewModel,
-    onNavigateToHiddenApps: () -> Unit,
-) {
-    SettingsItem(
-        title = "Set as Default Launcher",
-        subtitle = if (isVitriolDefault(context)) "Vitriol is default" else "Vitriol is not default",
-        onClick = {
-            context.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
-        },
-        enabled = true,
-    )
-
-    SettingsToggle(
-        title = "Lock Settings",
-        description = "Prevent changes to settings without a PIN",
-        isChecked = uiState.lockSettings,
-        onCheckedChange = { locked ->
-            if (locked) viewModel.setShowLockDialog(true, true)
-            else viewModel.toggleLockSettings(false)
-        },
-    )
-
-    SettingsItem(title = "Hidden Apps", onClick = onNavigateToHiddenApps)
-
-    SettingsItem(
-        title = "About Vitriol",
-        subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
-        onClick = {
-            context.startActivity(
-                Intent(Intent.ACTION_VIEW).apply {
-                    data = Constants.URL_ABOUT_VITRIOL.toUri()
-                }
-            )
-        },
-    )
-}
-
-// Extension functions
-private fun KProperty1<AppSettings, *>.currentFloatValue(state: AppSettings): Float =
-    when (returnType.classifier) {
-        Int::class -> (get(state) as Int).toFloat()
-        Float::class -> get(state) as Float
-        else -> 0f
-    }
 
 private fun SettingCategory.displayName(): String =
     name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
@@ -799,6 +611,74 @@ private fun DropdownSettingDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun ToggleSettingItem(
+    title: String,
+    description: String?,
+    isChecked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onCheckedChange(!isChecked) }
+            .padding(16.dp)
+            .alpha(if (enabled) 1f else ALPHA),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            description?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+        Switch(checked = isChecked, onCheckedChange = onCheckedChange, enabled = enabled)
+    }
+}
+
+@Composable
+private fun SystemSettings(
+    context: android.content.Context,
+    uiState: AppSettings,
+    viewModel: SettingsViewModel,
+    onNavigateToHiddenApps: () -> Unit,
+) {
+    SettingsItem(
+        title = "Set as Default Launcher",
+        subtitle = if (isVitriolDefault(context)) "Vitriol is default" else "Vitriol is not default",
+        onClick = { context.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) },
+        enabled = true,
+    )
+    SettingsToggle(
+        title = "Lock Settings",
+        description = "Prevent changes to settings without a PIN",
+        isChecked = uiState.lockSettings,
+        onCheckedChange = { locked ->
+            if (locked) viewModel.setShowLockDialog(true, true)
+            else viewModel.toggleLockSettings(false)
+        },
+    )
+    SettingsItem(title = "Hidden Apps", onClick = onNavigateToHiddenApps)
+    SettingsItem(
+        title = "About Vitriol",
+        subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName}",
+        onClick = {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW).apply {
+                    data = Constants.URL_ABOUT_VITRIOL.toUri()
+                }
+            )
         },
     )
 }

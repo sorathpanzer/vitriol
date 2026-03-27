@@ -92,9 +92,9 @@ android {
         }
 
         getByName("debug") {
-            isShrinkResources = true
-            isDebuggable = false
-            isMinifyEnabled = true
+            isShrinkResources = false
+            isDebuggable = true
+            isMinifyEnabled = false
             applicationIdSuffix = ".debug"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -155,6 +155,5 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
-    implementation(libs.kotlin.reflect)
     implementation(libs.exp4j)
 }
