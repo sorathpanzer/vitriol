@@ -7,6 +7,11 @@ plugins {
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
 }
 
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("$rootDir/detekt.yml"))
+}
+
 android {
     compileSdk = 36
     buildToolsVersion = "36.0.0"

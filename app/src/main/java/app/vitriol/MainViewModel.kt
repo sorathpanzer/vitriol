@@ -18,8 +18,8 @@ import app.vitriol.ui.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -37,7 +37,9 @@ internal data class AppDrawerUiState(
     val error: String? = null,
 )
 
-internal class MainViewModel(application: Application) : AndroidViewModel(application) {
+internal class MainViewModel(
+    application: Application,
+) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     val settingsRepository = SettingsRepository(appContext)
     private val appRepository = AppRepository(appContext, settingsRepository)
@@ -49,11 +51,14 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
     val appDrawerState = _appDrawerState.asStateFlow()
 
     // Restored for UI compatibility
-    val hiddenApps: StateFlow<List<AppModel>> = appRepository.hiddenApps
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val hiddenApps: StateFlow<List<AppModel>> =
+        appRepository.hiddenApps
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val errorMessage: StateFlow<String?> = _appDrawerState.map { it.error }
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val errorMessage: StateFlow<String?> =
+        _appDrawerState
+            .map { it.error }
+            .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val _launcherResetFailed = MutableStateFlow(false)
     val launcherResetFailed = _launcherResetFailed.asStateFlow()
@@ -69,8 +74,10 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
     fun loadApps() {
         viewModelScope.launch {
             _appDrawerState.update { it.copy(loading = true) }
-            try { appRepository.loadApps() } catch (e: Exception) { 
-                _appDrawerState.update { it.copy(error = e.message, loading = false) } 
+            try {
+                appRepository.loadApps()
+            } catch (e: Exception) {
+                _appDrawerState.update { it.copy(error = e.message, loading = false) }
             }
         }
     }
@@ -83,7 +90,10 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch { appRepository.toggleAppHidden(app) }
     }
 
-    fun renameApp(app: AppModel, newName: String) {
+    fun renameApp(
+        app: AppModel,
+        newName: String,
+    ) {
         viewModelScope.launch {
             val appKey = app.getKey()
             if (newName.isBlank() || newName == app.appLabel) {
@@ -97,7 +107,9 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
 
     fun launchApp(app: AppModel) {
         viewModelScope.launch {
-            try { appRepository.launchApp(app) } catch (e: Exception) {
+            try {
+                appRepository.launchApp(app)
+            } catch (e: Exception) {
                 _appDrawerState.update { it.copy(error = "Launch failed") }
             }
         }
@@ -111,7 +123,10 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
         _appDrawerState.update { it.copy(error = null) }
     }
 
-    fun selectedApp(app: AppModel, flag: Int) {
+    fun selectedApp(
+        app: AppModel,
+        flag: Int,
+    ) {
         when (flag) {
             Constants.FLAG_LAUNCH_APP, Constants.FLAG_HIDDEN_APPS -> launchApp(app)
             Constants.FLAG_SET_SWIPE_LEFT_APP -> setGestureApp(app, settingsRepository::setSwipeLeftApp)
@@ -136,13 +151,15 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
             val settings = settingsRepository.settings.first()
             val pref = getPref(settings)
             if (pref != null && pref.packageName.isNotEmpty()) {
-                launchApp(AppModel(
-                    appLabel = pref.label,
-                    key = null,
-                    appPackage = pref.packageName,
-                    activityClassName = pref.activityClassName,
-                    user = getUserHandleFromString(appContext, pref.userString)
-                ))
+                launchApp(
+                    AppModel(
+                        appLabel = pref.label,
+                        key = null,
+                        appPackage = pref.packageName,
+                        activityClassName = pref.activityClassName,
+                        user = getUserHandleFromString(appContext, pref.userString),
+                    ),
+                )
             }
         }
     }
@@ -160,27 +177,31 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
     fun launchPinchInApp() = launchGesture { it.pinchInApp }
     fun launchPinchOutApp() = launchGesture { it.pinchOutApp }
 
-    private fun setGestureApp(app: AppModel, save: suspend (AppPreference) -> Unit) {
+    private fun setGestureApp(
+        app: AppModel,
+        save: suspend (AppPreference) -> Unit,
+    ) {
         viewModelScope.launch { save(app.toPreference()) }
     }
 
     // --- Search & Math ---
     fun searchApps(query: String) {
         viewModelScope.launch {
-            _appDrawerState.update { 
+            _appDrawerState.update {
                 it.copy(
-                    loading = false
+                    loading = false,
                 )
             }
-    
+
             val apps = _appDrawerState.value.apps
-    
-            val filtered = apps.filter {
-                it.appLabel.startsWith(query, ignoreCase = true)
-            }
-    
+
+            val filtered =
+                apps.filter {
+                    it.appLabel.startsWith(query, ignoreCase = true)
+                }
+
             _appDrawerState.update { it.copy(filteredApps = filtered) }
-    
+
             if (filtered.size == 1) launchApp(filtered[0])
         }
     }
@@ -192,8 +213,11 @@ internal class MainViewModel(application: Application) : AndroidViewModel(applic
         appContext.startService(intent)
     }
 
-    private fun AppModel.toPreference() = AppPreference(
-        label = appLabel, packageName = appPackage,
-        activityClassName = activityClassName, userString = user.toString()
-    )
+    private fun AppModel.toPreference() =
+        AppPreference(
+            label = appLabel,
+            packageName = appPackage,
+            activityClassName = activityClassName,
+            userString = user.toString(),
+        )
 }

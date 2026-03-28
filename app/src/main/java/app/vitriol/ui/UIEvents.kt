@@ -48,7 +48,10 @@ internal sealed class UiEvent {
     object ResetLauncher : UiEvent()
 }
 
-internal enum class AppSelectionType(val flag: Int, val title: String) {
+internal enum class AppSelectionType(
+    val flag: Int,
+    val title: String,
+) {
     SWIPE_UP_APP(Constants.FLAG_SET_SWIPE_UP_APP, "Select Swipe Up Action App"),
     SWIPE_DOWN_APP(Constants.FLAG_SET_SWIPE_DOWN_APP, "Select Swipe Down Action App"),
     SWIPE_LEFT_APP(Constants.FLAG_SET_SWIPE_LEFT_APP, "Select Swipe Left App"),
@@ -60,5 +63,5 @@ internal enum class AppSelectionType(val flag: Int, val title: String) {
     ONE_TAP_APP(Constants.FLAG_SET_ONE_TAP_APP, "Select One Tap App"),
     DOUBLE_TAP_APP(Constants.FLAG_SET_DOUBLE_TAP_APP, "Select Double Tap App"),
     PINCH_IN_APP(Constants.FLAG_SET_PINCH_IN_APP, "Select Pinch In App"),
-    PINCH_OUT_APP(Constants.FLAG_SET_PINCH_OUT_APP, "Select Pinch Out App")
+    PINCH_OUT_APP(Constants.FLAG_SET_PINCH_OUT_APP, "Select Pinch Out App"),
 }

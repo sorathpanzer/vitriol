@@ -28,18 +28,17 @@ internal fun SystemUIController(immersiveMode: Boolean) {
                 if (immersiveMode) {
                     controller.hide(
                         WindowInsetsCompat.Type.statusBars() or
-                        WindowInsetsCompat.Type.navigationBars()
+                            WindowInsetsCompat.Type.navigationBars(),
                     )
                 } else {
                     controller.show(
                         WindowInsetsCompat.Type.statusBars() or
-                        WindowInsetsCompat.Type.navigationBars()
+                            WindowInsetsCompat.Type.navigationBars(),
                     )
                 }
 
                 controller.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-
             } catch (e: SecurityException) {
                 Log.e("SystemUIController", "Failed to update system UI", e)
             }

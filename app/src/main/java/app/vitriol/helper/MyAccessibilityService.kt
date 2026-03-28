@@ -14,7 +14,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 internal class MyAccessibilityService : AccessibilityService() {
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val settingsRepository by lazy {

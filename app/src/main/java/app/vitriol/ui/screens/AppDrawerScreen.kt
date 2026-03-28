@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,6 +30,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,8 +39,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -101,13 +101,14 @@ internal fun AppDrawerScreen(
     var selectedApp by remember { mutableStateOf<AppModel?>(null) }
     var showContextMenu by remember { mutableStateOf(false) }
 
-    val handleAppClick = remember(viewModel, onAppClick, focusManager, keyboardController) {
-        { app: AppModel ->
-            searchQuery = ""
-            focusManager?.hide()
-            onAppClick(app)
+    val handleAppClick =
+        remember(viewModel, onAppClick, focusManager, keyboardController) {
+            { app: AppModel ->
+                searchQuery = ""
+                focusManager?.hide()
+                onAppClick(app)
+            }
         }
-    }
 
     LaunchedEffect(Unit) { viewModel.loadApps() }
     LaunchedEffect(searchQuery) { viewModel.searchApps(searchQuery) }
@@ -116,7 +117,9 @@ internal fun AppDrawerScreen(
     LaunchedEffect(searchQuery) {
         if (searchQuery.isEmpty() &&
             (scrollState.firstVisibleItemIndex != 0 || scrollState.firstVisibleItemScrollOffset != 0)
-        ) scrollState.scrollToItem(0)
+        ) {
+            scrollState.scrollToItem(0)
+        }
     }
 
     LaunchedEffect(scrollState.isScrollInProgress) {
@@ -126,16 +129,17 @@ internal fun AppDrawerScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .detectSwipeGestures(
-                onSwipeDown = { onSwipeDown() },
-                onSwipeUp = {
-                    if (scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0)
-                        onSwipeDown()
-                },
-            )
-            .statusBarsPadding(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .detectSwipeGestures(
+                    onSwipeDown = { onSwipeDown() },
+                    onSwipeUp = {
+                        if (scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0) {
+                            onSwipeDown()
+                        }
+                    },
+                ).statusBarsPadding(),
     ) {
         if (selectionMode) {
             TopAppBar(
@@ -154,34 +158,38 @@ internal fun AppDrawerScreen(
 
         // Inline search field directly
         BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
             TextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .width(minOf(maxWidth, 600.dp))
-                    .onFocusChanged { if (it.isFocused) keyboardController?.show() },
+                modifier =
+                    Modifier
+                        .width(minOf(maxWidth, 600.dp))
+                        .onFocusChanged { if (it.isFocused) keyboardController?.show() },
                 placeholder = {
                     Text("Search App...", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 },
                 singleLine = true,
                 textStyle = TextStyle(textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = {
-                    keyboardController?.hide()
-                    appsToShow.firstOrNull()?.let { handleAppClick(it) }
-                }),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
+                keyboardActions =
+                    KeyboardActions(onSearch = {
+                        keyboardController?.hide()
+                        appsToShow.firstOrNull()?.let { handleAppClick(it) }
+                    }),
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
             )
         }
 
@@ -203,10 +211,11 @@ internal fun AppDrawerScreen(
                 Box(Modifier.fillMaxSize(), Alignment.TopCenter) {
                     Button(
                         onClick = { },
-                        colors = ButtonDefaults.buttonColors(
-                            contentColor = MaterialTheme.colorScheme.onBackground,
-                            containerColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                contentColor = MaterialTheme.colorScheme.onBackground,
+                                containerColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
                     ) {
                         Text("No apps found")
                     }
@@ -222,12 +231,16 @@ internal fun AppDrawerScreen(
                             app = app,
                             fontScale = settings.searchResultsFontSize,
                             onClick = { handleAppClick(app) },
-                            onLongClick = { selectedApp = app; showContextMenu = true },
-                            modifier = Modifier.animateItem(
-                                fadeInSpec = null,
-                                fadeOutSpec = null,
-                                placementSpec = tween(durationMillis = ANIMATION_DURATION_MS),
-                            ),
+                            onLongClick = {
+                                selectedApp = app
+                                showContextMenu = true
+                            },
+                            modifier =
+                                Modifier.animateItem(
+                                    fadeInSpec = null,
+                                    fadeOutSpec = null,
+                                    placementSpec = tween(durationMillis = ANIMATION_DURATION_MS),
+                                ),
                         )
                     }
                 }
@@ -241,7 +254,11 @@ internal fun AppDrawerScreen(
         val hidden = app.getKey() in hiddenKeys
         var renameDialogVisible by remember { mutableStateOf(false) }
         var newAppName by remember { mutableStateOf(app.appLabel) }
-        fun dismiss() { showContextMenu = false; selectedApp = null }
+
+        fun dismiss() {
+            showContextMenu = false
+            selectedApp = null
+        }
 
         AlertDialog(
             onDismissRequest = { dismiss() },
@@ -249,7 +266,8 @@ internal fun AppDrawerScreen(
             text = {
                 Column {
                     ContextMenuItem(if (hidden) "Unhide App" else "Hide App", Icons.Default.Settings) {
-                        viewModel.toggleAppHidden(app); dismiss()
+                        viewModel.toggleAppHidden(app)
+                        dismiss()
                     }
                     ContextMenuItem("Rename App", Icons.Default.Edit) { renameDialogVisible = true }
                     ContextMenuItem("App Info", Icons.Default.Info) {
@@ -257,7 +275,7 @@ internal fun AppDrawerScreen(
                             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                 data = Uri.fromParts("package", app.appPackage, null)
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
+                            },
                         )
                         dismiss()
                     }
@@ -279,7 +297,11 @@ internal fun AppDrawerScreen(
                     )
                 },
                 confirmButton = {
-                    TextButton(onClick = { viewModel.renameApp(app, newAppName); renameDialogVisible = false; dismiss() }) {
+                    TextButton(onClick = {
+                        viewModel.renameApp(app, newAppName)
+                        renameDialogVisible = false
+                        dismiss()
+                    }) {
                         Text("Save")
                     }
                 },
@@ -301,18 +323,20 @@ private fun AppListItem(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .animateContentSize(tween(ANIMATION_DURATION_MS))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .animateContentSize(tween(ANIMATION_DURATION_MS))
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = app.appLabel,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
-            ),
+            style =
+                MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = MaterialTheme.typography.bodyLarge.fontSize * fontScale,
+                ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface,
@@ -322,13 +346,18 @@ private fun AppListItem(
 }
 
 @Composable
-private fun ContextMenuItem(text: String, icon: ImageVector, onClick: () -> Unit) {
+private fun ContextMenuItem(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { role = Role.Button }
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { role = Role.Button }
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = text, modifier = Modifier.padding(end = 16.dp))

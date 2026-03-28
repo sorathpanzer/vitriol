@@ -57,8 +57,8 @@ private fun Context.startActivitySafely(intent: Intent) {
     try {
         intent.addFlags(
             Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
         )
         startActivity(intent)
     } catch (e: ActivityNotFoundException) {
@@ -100,26 +100,27 @@ internal fun VitriolNavigation(
 
     var currentSelectionType by remember { mutableStateOf<AppSelectionType?>(null) }
 
-    val handleEvent = remember(context, onScreenChange) {
-        { event: UiEvent ->
-            when (event) {
-                is UiEvent.NavigateToAppDrawer -> onScreenChange(Navigation.APP_DRAWER)
-                is UiEvent.NavigateToSettings -> onScreenChange(Navigation.SETTINGS)
-                is UiEvent.NavigateToHiddenApps -> onScreenChange(Navigation.HIDDEN_APPS)
-                is UiEvent.NavigateBack -> {
-                    onScreenChange(Navigation.HOME)
-                    settingsViewModel.resetUnlockState()
+    val handleEvent =
+        remember(context, onScreenChange) {
+            { event: UiEvent ->
+                when (event) {
+                    is UiEvent.NavigateToAppDrawer -> onScreenChange(Navigation.APP_DRAWER)
+                    is UiEvent.NavigateToSettings -> onScreenChange(Navigation.SETTINGS)
+                    is UiEvent.NavigateToHiddenApps -> onScreenChange(Navigation.HIDDEN_APPS)
+                    is UiEvent.NavigateBack -> {
+                        onScreenChange(Navigation.HOME)
+                        settingsViewModel.resetUnlockState()
+                    }
+                    is UiEvent.StartActivityForResult -> context.startActivitySafely(event.intent)
+                    is UiEvent.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    is UiEvent.NavigateToAppSelection -> {
+                        currentSelectionType = event.selectionType
+                        onScreenChange(Navigation.APP_DRAWER)
+                    }
+                    else -> {}
                 }
-                is UiEvent.StartActivityForResult -> context.startActivitySafely(event.intent)
-                is UiEvent.ShowToast -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                is UiEvent.NavigateToAppSelection -> {
-                    currentSelectionType = event.selectionType
-                    onScreenChange(Navigation.APP_DRAWER)
-                }
-                else -> {}
             }
         }
-    }
 
     LaunchedEffect(viewModel, settingsViewModel) {
         launch { viewModel.eventsFlow.collectLatest(handleEvent) }
@@ -128,12 +129,13 @@ internal fun VitriolNavigation(
 
     NavigationContent(
         controllers = NavigationControllers(viewModel, settingsViewModel),
-        state = NavigationState(
-            currentScreen = currentScreen,
-            currentSelectionType = currentSelectionType,
-            onClearSelection = { currentSelectionType = null },
-            onScreenChange = onScreenChange,
-        )
+        state =
+            NavigationState(
+                currentScreen = currentScreen,
+                currentSelectionType = currentSelectionType,
+                onClearSelection = { currentSelectionType = null },
+                onScreenChange = onScreenChange,
+            ),
     )
 }
 
@@ -149,39 +151,43 @@ private fun NavigationContent(
     AnimatedContent(
         targetState = state.currentScreen,
         transitionSpec = { getTransition(initialState, targetState) },
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) { screen ->
         Box(Modifier.fillMaxSize()) {
             when (screen) {
-                Navigation.HOME -> HomeScreen(
-                    viewModel = controllers.mainViewModel,
-                    settingsViewModel = controllers.settingsViewModel,
-                    onNavigateToAppDrawer = { state.onScreenChange(Navigation.APP_DRAWER) },
-                    onNavigateToSettings = { state.onScreenChange(Navigation.SETTINGS) }
-                )
-                Navigation.APP_DRAWER -> AppDrawerScreen(
-                    viewModel = controllers.mainViewModel,
-                    settingsViewModel = controllers.settingsViewModel,
-                    onAppClick = { app ->
-                        state.currentSelectionType?.let {
-                            controllers.mainViewModel.selectedApp(app, it.flag)
-                            state.onClearSelection()
-                            state.onScreenChange(Navigation.SETTINGS)
-                        } ?: controllers.mainViewModel.launchApp(app)
-                    },
-                    onSwipeDown = { state.onScreenChange(Navigation.HOME) },
-                    selectionMode = state.currentSelectionType != null,
-                    selectionTitle = state.currentSelectionType?.title.orEmpty()
-                )
-                Navigation.SETTINGS -> SettingsScreen(
-                    viewModel = controllers.settingsViewModel,
-                    onNavigateBack = { state.onScreenChange(Navigation.HOME) },
-                    onNavigateToHiddenApps = { state.onScreenChange(Navigation.HIDDEN_APPS) }
-                )
-                Navigation.HIDDEN_APPS -> HiddenAppsScreen(
-                    viewModel = controllers.mainViewModel,
-                    onNavigateBack = { state.onScreenChange(Navigation.SETTINGS) }
-                )
+                Navigation.HOME ->
+                    HomeScreen(
+                        viewModel = controllers.mainViewModel,
+                        settingsViewModel = controllers.settingsViewModel,
+                        onNavigateToAppDrawer = { state.onScreenChange(Navigation.APP_DRAWER) },
+                        onNavigateToSettings = { state.onScreenChange(Navigation.SETTINGS) },
+                    )
+                Navigation.APP_DRAWER ->
+                    AppDrawerScreen(
+                        viewModel = controllers.mainViewModel,
+                        settingsViewModel = controllers.settingsViewModel,
+                        onAppClick = { app ->
+                            state.currentSelectionType?.let {
+                                controllers.mainViewModel.selectedApp(app, it.flag)
+                                state.onClearSelection()
+                                state.onScreenChange(Navigation.SETTINGS)
+                            } ?: controllers.mainViewModel.launchApp(app)
+                        },
+                        onSwipeDown = { state.onScreenChange(Navigation.HOME) },
+                        selectionMode = state.currentSelectionType != null,
+                        selectionTitle = state.currentSelectionType?.title.orEmpty(),
+                    )
+                Navigation.SETTINGS ->
+                    SettingsScreen(
+                        viewModel = controllers.settingsViewModel,
+                        onNavigateBack = { state.onScreenChange(Navigation.HOME) },
+                        onNavigateToHiddenApps = { state.onScreenChange(Navigation.HIDDEN_APPS) },
+                    )
+                Navigation.HIDDEN_APPS ->
+                    HiddenAppsScreen(
+                        viewModel = controllers.mainViewModel,
+                        onNavigateBack = { state.onScreenChange(Navigation.SETTINGS) },
+                    )
             }
         }
     }
@@ -191,48 +197,55 @@ private fun NavigationContent(
 // Navigation Transitions
 // ------------------------
 @OptIn(ExperimentalAnimationApi::class)
-private fun getTransition(initial: String, target: String): ContentTransform =
+private fun getTransition(
+    initial: String,
+    target: String,
+): ContentTransform =
     when (target) {
         Navigation.HOME -> {
             if (initial == Navigation.APP_DRAWER) {
                 slideInVertically(
                     initialOffsetY = { fullHeight -> -fullHeight },
-                    animationSpec = tween(ANIMATION_TWEEN_VAL)
-                ) togetherWith slideOutVertically(
-                    targetOffsetY = { fullHeight -> fullHeight },
-                    animationSpec = tween(ANIMATION_TWEEN_VAL)
-                )
+                    animationSpec = tween(ANIMATION_TWEEN_VAL),
+                ) togetherWith
+                    slideOutVertically(
+                        targetOffsetY = { fullHeight -> fullHeight },
+                        animationSpec = tween(ANIMATION_TWEEN_VAL),
+                    )
             } else {
                 slideInHorizontally(
                     initialOffsetX = { fullWidth -> -fullWidth },
-                    animationSpec = tween(ANIMATION_TWEEN_VAL)
-                ) togetherWith slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(ANIMATION_TWEEN_VAL)
-                )
+                    animationSpec = tween(ANIMATION_TWEEN_VAL),
+                ) togetherWith
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(ANIMATION_TWEEN_VAL),
+                    )
             }
         }
         Navigation.APP_DRAWER ->
             slideInVertically(
                 initialOffsetY = { fullHeight -> fullHeight },
-                animationSpec = tween(ANIMATION_TWEEN_VAL)
-            ) togetherWith slideOutVertically(
-                targetOffsetY = { fullHeight -> -fullHeight },
-                animationSpec = tween(ANIMATION_TWEEN_VAL)
-            )
+                animationSpec = tween(ANIMATION_TWEEN_VAL),
+            ) togetherWith
+                slideOutVertically(
+                    targetOffsetY = { fullHeight -> -fullHeight },
+                    animationSpec = tween(ANIMATION_TWEEN_VAL),
+                )
         Navigation.SETTINGS, Navigation.HIDDEN_APPS ->
             slideInHorizontally(
                 initialOffsetX = { fullWidth -> fullWidth },
-                animationSpec = tween(ANIMATION_TWEEN_VAL)
-            ) togetherWith slideOutHorizontally(
-                targetOffsetX = { fullWidth -> -fullWidth },
-                animationSpec = tween(ANIMATION_TWEEN_VAL)
-            )
+                animationSpec = tween(ANIMATION_TWEEN_VAL),
+            ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth },
+                    animationSpec = tween(ANIMATION_TWEEN_VAL),
+                )
         else ->
             fadeIn(animationSpec = tween(ANIMATION_TWEEN_VAL)) +
-                    scaleIn(initialScale = 0.95f, animationSpec = tween(ANIMATION_TWEEN_VAL)) togetherWith
-                    fadeOut(animationSpec = tween(ANIMATION_TWEEN_VAL)) +
-                    scaleOut(targetScale = 0.95f, animationSpec = tween(ANIMATION_TWEEN_VAL))
+                scaleIn(initialScale = 0.95f, animationSpec = tween(ANIMATION_TWEEN_VAL)) togetherWith
+                fadeOut(animationSpec = tween(ANIMATION_TWEEN_VAL)) +
+                scaleOut(targetScale = 0.95f, animationSpec = tween(ANIMATION_TWEEN_VAL))
     }
 
 // ------------------------
@@ -245,13 +258,14 @@ internal fun BackHandler(
 ) {
     val currentOnBack by rememberUpdatedState(onBack)
 
-    val backCallback = remember {
-        object : OnBackPressedCallback(enabled) {
-            override fun handleOnBackPressed() {
-                currentOnBack()
+    val backCallback =
+        remember {
+            object : OnBackPressedCallback(enabled) {
+                override fun handleOnBackPressed() {
+                    currentOnBack()
+                }
             }
         }
-    }
 
     SideEffect {
         backCallback.isEnabled = enabled

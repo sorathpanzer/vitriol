@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 internal class MainActivity : ComponentActivity() {
-
     private val viewModel: MainViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val settingsRepository by lazy { SettingsRepository(applicationContext) }

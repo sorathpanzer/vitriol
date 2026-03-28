@@ -2,8 +2,8 @@ package app.vitriol.data.repository
 
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
-import android.content.Intent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.LauncherApps
 import app.vitriol.data.AppModel
 import app.vitriol.helper.getAppsList
@@ -80,39 +80,38 @@ internal class AppRepository(
     // * Launch an app
     internal suspend fun launchApp(appModel: AppModel) {
         withContext(Dispatchers.Main) {
-    
             // --- 1) Check if the app is actually installed ---
             val pm = context.packageManager
             val launchIntent = pm.getLaunchIntentForPackage(appModel.appPackage)
-    
+
             // App not installed → ignore silently
             if (launchIntent == null) {
                 return@withContext
             }
-    
+
             try {
                 // --- 2) Try launching normally through LauncherApps ---
-                val component = ComponentName(
-                    appModel.appPackage,
-                    appModel.activityClassName ?: "",
-                )
-    
+                val component =
+                    ComponentName(
+                        appModel.appPackage,
+                        appModel.activityClassName ?: "",
+                    )
+
                 launcherApps.startMainActivity(
                     component,
                     appModel.user,
                     null,
-                    null
+                    null,
                 )
-    
-                } catch (e: SecurityException) {
-                    // log original exception
-                    println("LauncherApps startMainActivity failed: ${e.message}")
-                    e.printStackTrace()
-                
-                    // fallback to normal launch
-                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(launchIntent)
-                }
+            } catch (e: SecurityException) {
+                // log original exception
+                println("LauncherApps startMainActivity failed: ${e.message}")
+                e.printStackTrace()
+
+                // fallback to normal launch
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(launchIntent)
+            }
         }
     }
 
