@@ -50,9 +50,6 @@ import kotlinx.coroutines.launch
 
 private const val ANIMATION_TWEEN_VAL = 300
 
-// ------------------------
-// Safe startActivity extension
-// ------------------------
 private fun Context.startActivitySafely(intent: Intent) {
     try {
         intent.addFlags(
@@ -68,9 +65,6 @@ private fun Context.startActivitySafely(intent: Intent) {
     }
 }
 
-// ------------------------
-// Navigation Controllers & State
-// ------------------------
 private data class NavigationControllers(
     val mainViewModel: MainViewModel,
     val settingsViewModel: SettingsViewModel,
@@ -83,9 +77,6 @@ private data class NavigationState(
     val onScreenChange: (String) -> Unit,
 )
 
-// ------------------------
-// Main Vitriol Navigation Composable
-// ------------------------
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 internal fun VitriolNavigation(
@@ -139,9 +130,6 @@ internal fun VitriolNavigation(
     )
 }
 
-// ------------------------
-// Animated Navigation Content
-// ------------------------
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun NavigationContent(
@@ -193,9 +181,6 @@ private fun NavigationContent(
     }
 }
 
-// ------------------------
-// Navigation Transitions
-// ------------------------
 @OptIn(ExperimentalAnimationApi::class)
 private fun getTransition(
     initial: String,
@@ -248,9 +233,6 @@ private fun getTransition(
                 scaleOut(targetScale = 0.95f, animationSpec = tween(ANIMATION_TWEEN_VAL))
     }
 
-// ------------------------
-// BackHandler Composable
-// ------------------------
 @Composable
 internal fun BackHandler(
     enabled: Boolean = true,

@@ -177,11 +177,11 @@ internal fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
+                // navigationIcon = {
+                //     IconButton(onClick = onNavigateBack) {
+                //         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                //     }
+                // },
             )
         },
     ) { paddingValues ->

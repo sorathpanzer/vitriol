@@ -12,24 +12,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import app.vitriol.data.Navigation
-import app.vitriol.data.repository.SettingsRepository
 import app.vitriol.ui.UiEvent
 import app.vitriol.ui.VitriolNavigation
 import app.vitriol.ui.viewmodels.SettingsViewModel
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 internal class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
-    private val settingsRepository by lazy { SettingsRepository(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        handleFirstOpen()
+        // Trigger initialization logic in ViewModel
+        viewModel.onActivityCreated()
 
         setContent {
             var currentScreen by rememberSaveable { mutableStateOf(Navigation.HOME) }
@@ -50,21 +46,9 @@ internal class MainActivity : ComponentActivity() {
                 }
             }
 
+            // Initial load of apps
             LaunchedEffect(Unit) {
                 viewModel.loadApps()
-            }
-        }
-    }
-
-    private fun handleFirstOpen() {
-        lifecycleScope.launch {
-            val settings = settingsRepository.settings.first()
-            if (settings.firstOpen) {
-                viewModel.firstOpen(false)
-                settingsRepository.setFirstOpen(false)
-                settingsRepository.updateSetting {
-                    it.copy(firstOpenTime = System.currentTimeMillis())
-                }
             }
         }
     }
@@ -72,9 +56,7 @@ internal class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
-            lifecycleScope.launch {
-                viewModel.emitEvent(UiEvent.NavigateBack)
-            }
+            viewModel.emitEvent(UiEvent.NavigateBack)
         }
     }
 }

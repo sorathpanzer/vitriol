@@ -1,9 +1,7 @@
 package app.vitriol
 
 import android.app.Application
-import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.vitriol.data.AppModel
@@ -17,7 +15,6 @@ import app.vitriol.helper.getUserHandleFromString
 import app.vitriol.ui.UiEvent
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -27,7 +24,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 internal data class AppDrawerUiState(
     val apps: List<AppModel> = emptyList(),
@@ -50,7 +46,6 @@ internal class MainViewModel(
     private val _appDrawerState = MutableStateFlow(AppDrawerUiState())
     val appDrawerState = _appDrawerState.asStateFlow()
 
-    // Restored for UI compatibility
     val hiddenApps: StateFlow<List<AppModel>> =
         appRepository.hiddenApps
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -67,6 +62,22 @@ internal class MainViewModel(
         viewModelScope.launch {
             appRepository.appList.collect { apps ->
                 _appDrawerState.update { it.copy(apps = apps, loading = false) }
+            }
+        }
+    }
+
+    fun onActivityCreated() {
+        handleFirstOpen()
+    }
+
+    private fun handleFirstOpen() {
+        viewModelScope.launch {
+            val settings = settingsRepository.settings.first()
+            if (settings.firstOpen) {
+                settingsRepository.setFirstOpen(false)
+                settingsRepository.updateSetting {
+                    it.copy(firstOpenTime = System.currentTimeMillis())
+                }
             }
         }
     }
@@ -115,10 +126,6 @@ internal class MainViewModel(
         }
     }
 
-    fun firstOpen(value: Boolean) {
-        viewModelScope.launch { settingsRepository.setFirstOpen(value) }
-    }
-
     fun clearError() {
         _appDrawerState.update { it.copy(error = null) }
     }
@@ -127,24 +134,29 @@ internal class MainViewModel(
         app: AppModel,
         flag: Int,
     ) {
-        when (flag) {
-            Constants.FLAG_LAUNCH_APP, Constants.FLAG_HIDDEN_APPS -> launchApp(app)
-            Constants.FLAG_SET_SWIPE_LEFT_APP -> setGestureApp(app, settingsRepository::setSwipeLeftApp)
-            Constants.FLAG_SET_SWIPE_RIGHT_APP -> setGestureApp(app, settingsRepository::setSwipeRightApp)
-            Constants.FLAG_SET_ONE_TAP_APP -> setGestureApp(app, settingsRepository::setOneTapApp)
-            Constants.FLAG_SET_DOUBLE_TAP_APP -> setGestureApp(app, settingsRepository::setDoubleTapApp)
-            Constants.FLAG_SET_SWIPE_UP_APP -> setGestureApp(app, settingsRepository::setSwipeUpApp)
-            Constants.FLAG_SET_SWIPE_DOWN_APP -> setGestureApp(app, settingsRepository::setSwipeDownApp)
-            Constants.FLAG_SET_TWOFINGER_SWIPE_UP_APP -> setGestureApp(app, settingsRepository::setTwoFingerSwipeUpApp)
-            Constants.FLAG_SET_TWOFINGER_SWIPE_DOWN_APP -> setGestureApp(app, settingsRepository::setTwoFingerSwipeDownApp)
-            Constants.FLAG_SET_TWOFINGER_SWIPE_LEFT_APP -> setGestureApp(app, settingsRepository::setTwoFingerSwipeLeftApp)
-            Constants.FLAG_SET_TWOFINGER_SWIPE_RIGHT_APP -> setGestureApp(app, settingsRepository::setTwoFingerSwipeRightApp)
-            Constants.FLAG_SET_PINCH_IN_APP -> setGestureApp(app, settingsRepository::setPinchInApp)
-            Constants.FLAG_SET_PINCH_OUT_APP -> setGestureApp(app, settingsRepository::setPinchOutApp)
+        val saveAction: (suspend (AppPreference) -> Unit)? =
+            when (flag) {
+                Constants.FLAG_SET_SWIPE_LEFT_APP -> settingsRepository::setSwipeLeftApp
+                Constants.FLAG_SET_SWIPE_RIGHT_APP -> settingsRepository::setSwipeRightApp
+                Constants.FLAG_SET_ONE_TAP_APP -> settingsRepository::setOneTapApp
+                Constants.FLAG_SET_DOUBLE_TAP_APP -> settingsRepository::setDoubleTapApp
+                Constants.FLAG_SET_SWIPE_UP_APP -> settingsRepository::setSwipeUpApp
+                Constants.FLAG_SET_SWIPE_DOWN_APP -> settingsRepository::setSwipeDownApp
+                Constants.FLAG_SET_TWOFINGER_SWIPE_UP_APP -> settingsRepository::setTwoFingerSwipeUpApp
+                Constants.FLAG_SET_TWOFINGER_SWIPE_DOWN_APP -> settingsRepository::setTwoFingerSwipeDownApp
+                Constants.FLAG_SET_TWOFINGER_SWIPE_LEFT_APP -> settingsRepository::setTwoFingerSwipeLeftApp
+                Constants.FLAG_SET_TWOFINGER_SWIPE_RIGHT_APP -> settingsRepository::setTwoFingerSwipeRightApp
+                Constants.FLAG_SET_PINCH_IN_APP -> settingsRepository::setPinchInApp
+                Constants.FLAG_SET_PINCH_OUT_APP -> settingsRepository::setPinchOutApp
+                else -> null
+            }
+
+        if (saveAction != null) {
+            setGestureApp(app, saveAction)
+        } else {
+            launchApp(app)
         }
     }
-
-    // --- Restored Gesture Launchers ---
 
     private fun launchGesture(getPref: (AppSettings) -> AppPreference?) {
         viewModelScope.launch {
@@ -184,23 +196,21 @@ internal class MainViewModel(
         viewModelScope.launch { save(app.toPreference()) }
     }
 
-    // --- Search & Math ---
     fun searchApps(query: String) {
         viewModelScope.launch {
-            _appDrawerState.update {
-                it.copy(
-                    loading = false,
-                )
-            }
-
             val apps = _appDrawerState.value.apps
-
             val filtered =
                 apps.filter {
                     it.appLabel.startsWith(query, ignoreCase = true)
                 }
 
-            _appDrawerState.update { it.copy(filteredApps = filtered) }
+            _appDrawerState.update {
+                it.copy(
+                    filteredApps = filtered,
+                    searchQuery = query,
+                    loading = false,
+                )
+            }
 
             if (filtered.size == 1) launchApp(filtered[0])
         }
