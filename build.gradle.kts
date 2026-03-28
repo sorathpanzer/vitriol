@@ -1,9 +1,17 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
-    id("com.github.ben-manes.versions") version "0.53.0"
+    alias(libs.plugins.benManesVersions)
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.layout.buildDirectory)
+tasks.register<Delete>("clean") {
+    delete(layout.buildDirectory)
+}
+
+tasks.withType<com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask> {
+    rejectVersionIf {
+        candidate.version.contains("alpha", false) ||
+        candidate.version.contains("beta", false) ||
+        candidate.version.contains("rc", false)
+    }
 }
