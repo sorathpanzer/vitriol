@@ -83,6 +83,11 @@ internal class MainViewModel(
     }
 
     fun loadApps() {
+        // Only load if we don't have apps yet or if we are not already loading
+        if (_appDrawerState.value.apps.isNotEmpty() || _appDrawerState.value.loading) {
+            return 
+        }
+    
         viewModelScope.launch {
             _appDrawerState.update { it.copy(loading = true) }
             try {
