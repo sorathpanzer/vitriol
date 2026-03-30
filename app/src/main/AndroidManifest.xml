@@ -15,8 +15,8 @@
         android:theme="@style/AppTheme">
 
         <provider
-            android:name=".AutofillThirdPartyModeContentProvider"
-            android:authorities="app.vitriol.AutofillThirdPartyModeContentProvider"
+            android:name=".AutofillProvider"
+            android:authorities="app.vitriol.AutofillProvider"
             android:exported="false"
             android:grantUriPermissions="true" />
 

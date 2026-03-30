@@ -98,6 +98,17 @@ internal class MainViewModel(
         }
     }
 
+    fun forceLoadApps() {
+        viewModelScope.launch {
+            _appDrawerState.update { it.copy(loading = true) }
+            try {
+                appRepository.loadApps()
+            } catch (e: Exception) {
+                _appDrawerState.update { it.copy(error = e.message, loading = false) }
+            }
+        }
+    }
+
     fun getHiddenApps() {
         viewModelScope.launch { appRepository.loadHiddenApps() }
     }

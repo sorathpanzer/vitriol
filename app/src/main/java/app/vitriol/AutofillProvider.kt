@@ -5,7 +5,7 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 
-internal class AutofillThirdPartyModeContentProvider : ContentProvider() {
+internal class AutofillProvider : ContentProvider() {
     override fun onCreate(): Boolean {
         // Return true to tell the system the provider loaded successfully
         return true
