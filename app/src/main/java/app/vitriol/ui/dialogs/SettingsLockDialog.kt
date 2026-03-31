@@ -38,28 +38,42 @@ internal fun SettingsLockDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 DialogTitle(settingPin)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                PinInputField(value = pin, onValueChange = {
-                    if (it.length <= 6) pin = it
-                    error = ""
-                })
+                PinInputField(
+                    value = pin,
+                    isError = error.isNotEmpty(),
+                    onValueChange = {
+                        // Logic: Only allow digits and max 6 chars
+                        if (it.all { char -> char.isDigit() } && it.length <= 6) {
+                            pin = it
+                            error = ""
+                        }
+                    }
+                )
 
                 if (settingPin) {
                     Spacer(modifier = Modifier.height(8.dp))
                     PinInputField(
                         label = "Confirm PIN",
                         value = confirmPin,
+                        isError = error.isNotEmpty(),
                         onValueChange = {
-                            if (it.length <= 6) confirmPin = it
-                            error = ""
+                            if (it.all { char -> char.isDigit() } && it.length <= 6) {
+                                confirmPin = it
+                                error = ""
+                            }
                         },
                     )
                 }
@@ -69,18 +83,21 @@ internal fun SettingsLockDialog(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                
                 DialogButtons(
                     onDismiss = onDismiss,
                     onConfirmClick = {
-                        error =
-                            when {
-                                pin.isEmpty() -> if (settingPin) "PIN cannot be empty" else "Please enter PIN"
-                                settingPin && pin != confirmPin -> "PINs do not match"
-                                else -> {
-                                    onConfirm(pin)
-                                    return@DialogButtons
-                                }
-                            }
+                        val validationError = when {
+                            pin.length < 4 -> "PIN must be at least 4 digits"
+                            settingPin && pin != confirmPin -> "PINs do not match"
+                            else -> null
+                        }
+
+                        if (validationError != null) {
+                            error = validationError
+                        } else {
+                            onConfirm(pin)
+                        }
                     },
                 )
             }
@@ -96,10 +113,12 @@ private fun DialogTitle(settingPin: Boolean) {
     )
 }
 
+
 @Composable
 private fun PinInputField(
     value: String,
     onValueChange: (String) -> Unit,
+    isError: Boolean = false,
     label: String = "PIN",
 ) {
     OutlinedTextField(
@@ -107,6 +126,7 @@ private fun PinInputField(
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
+        isError = isError, // Highlighting the field in red
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
         visualTransformation = PasswordVisualTransformation(),
         modifier = Modifier.fillMaxWidth(),
