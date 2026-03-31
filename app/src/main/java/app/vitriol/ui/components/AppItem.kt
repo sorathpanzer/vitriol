@@ -4,14 +4,17 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.vitriol.data.AppModel
 
@@ -36,18 +39,19 @@ internal fun AppItem(
         app.appIcon?.let { icon ->
             Image(
                 bitmap = icon,
-                contentDescription = null,
-                modifier =
-                    Modifier
-                        .size(40.dp)
-                        .padding(end = 16.dp),
+                contentDescription = null, // Label below handles this
+                modifier = Modifier.size(40.dp),
             )
+
+            Spacer(modifier = Modifier.width(16.dp))
         }
 
         Text(
             text = app.appLabel,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f),
+            maxLines = 1, // Prevents long app names from breaking your UI
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
