@@ -1,10 +1,21 @@
-![Vitriol]()
-
-
 # Vitriol
 
-Only open applications that you had in mind, Instead of opening or seeing the apps before searching
+Vitriol is a ultra-minimal privacy focused gesture android launcher.
+Minimal in user simplicity, and minimal in code 4000 lines of code.
+Use only a barebones set of libraries and permissions.
 
-If you need to rename or hide any apps, you could show the apps and then perform those operations.
+## Why the name?
 
-License: [GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)
+The word comes from the Latin vitriolum, which means “little glass.”
+In the alchemical tradition, VITRIOL is a famous acronym:
+
+“Visita Interiora Terrae Rectificando Invenies Occultum Lapidem”
+
+Translation:
+“Visit the interior of the earth and, by purifying yourself, you will find the hidden stone.”
+
+Symbolizes self-knowledge, transformation and enlightenment.
+
+## What it means all of that to the project.
+
+Absolutelly nothing... but I like it as fuck!! 👌

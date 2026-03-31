@@ -177,11 +177,6 @@ internal fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
-                // navigationIcon = {
-                //     IconButton(onClick = onNavigateBack) {
-                //         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                //     }
-                // },
             )
         },
     ) { paddingValues ->
@@ -666,12 +661,6 @@ private fun SystemSettings(
     viewModel: SettingsViewModel,
     onNavigateToHiddenApps: () -> Unit,
 ) {
-    SettingsItem(
-        title = "Set as Default Launcher",
-        subtitle = if (isVitriolDefault(context)) "Vitriol is default" else "Vitriol is not default",
-        onClick = { context.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) },
-        enabled = true,
-    )
     SettingsToggle(
         title = "Lock Settings",
         description = "Prevent changes to settings without a PIN",
