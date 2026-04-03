@@ -158,4 +158,5 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 }

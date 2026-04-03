@@ -1,7 +1,6 @@
 package app.vitriol.ui.screens
 
 import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -27,7 +25,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -56,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.vitriol.MainActivity
 import app.vitriol.data.Constants
 import app.vitriol.data.settings.AppPreference
 import app.vitriol.data.settings.AppSettings
@@ -64,12 +62,10 @@ import app.vitriol.data.settings.SettingDescriptor
 import app.vitriol.data.settings.SettingType
 import app.vitriol.data.settings.SettingValueType
 import app.vitriol.data.settings.SettingsManager
-import app.vitriol.helper.isVitriolDefault
 import app.vitriol.helper.setPlainWallpaper
 import app.vitriol.ui.AppSelectionType
 import app.vitriol.ui.BackHandler
 import app.vitriol.ui.UiEvent
-import app.vitriol.ui.dialogs.SettingsLockDialog
 import app.vitriol.ui.viewmodels.SettingsViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -122,37 +118,34 @@ internal fun SettingsScreen(
     onNavigateToHiddenApps: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val activity = context as? MainActivity
     val uiState by viewModel.settingsState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val settingsManager = remember { SettingsManager() }
     var currentDialog by remember { mutableStateOf<SettingsDialog?>(null) }
-
-    DisposableEffect(Unit) { onDispose { viewModel.resetUnlockState() } }
-
     val effectiveLockState by viewModel.effectiveLockState.collectAsState()
-    val showLockDialog by viewModel.showLockDialog.collectAsState()
-    val settingPin by viewModel.settingPin.collectAsState()
+
+    LaunchedEffect(Unit) {
+        if (effectiveLockState && activity != null) {
+            activity.showBiometricPrompt(
+                activity = activity,
+                onSuccess = { viewModel.setUnlocked(true) },
+                onError = { error ->
+                    viewModel.emitEvent(UiEvent.ShowToast("Authentication failed: $error"))
+                },
+            )
+        }
+    }
+
+    // Expires the session unlock when the user leaves the settings screen.
+    DisposableEffect(Unit) {
+        onDispose { viewModel.resetUnlockState() }
+    }
 
     BackHandler(onBack = {
         viewModel.resetUnlockState()
         onNavigateBack()
     })
-
-    if (showLockDialog) {
-        SettingsLockDialog(
-            settingPin = settingPin,
-            onDismiss = { viewModel.setShowLockDialog(false) },
-            onConfirm = { pin ->
-                if (settingPin) {
-                    viewModel.setPin(pin)
-                    viewModel.toggleLockSettings(true)
-                    viewModel.setShowLockDialog(false)
-                } else {
-                    if (viewModel.validatePin(pin)) viewModel.setShowLockDialog(false)
-                }
-            },
-        )
-    }
 
     val callbacks =
         remember(viewModel, coroutineScope) {
@@ -174,25 +167,35 @@ internal fun SettingsScreen(
     )
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-            )
-        },
+        topBar = { TopAppBar(title = { Text("Settings") }) },
     ) { paddingValues ->
+
         if (viewModel.loading.value) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
             return@Scaffold
         }
+
+        // Single, authoritative lock gate.
         if (effectiveLockState) {
             LockedSettingsView(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
-                onUnlock = { viewModel.setShowLockDialog(true, false) },
+                onUnlock = {
+                    activity?.let { mainActivity ->
+                        mainActivity.showBiometricPrompt(
+                            activity = mainActivity,
+                            onSuccess = { viewModel.setUnlocked(true) },
+                            onError = { error ->
+                                viewModel.emitEvent(UiEvent.ShowToast("Authentication failed: $error"))
+                            },
+                        )
+                    }
+                },
             )
             return@Scaffold
         }
+
         SettingsContent(
             modifier = Modifier.fillMaxSize().padding(paddingValues),
             uiState = uiState,
@@ -212,6 +215,7 @@ internal fun SettingsScreen(
             },
             viewModel = viewModel,
             context = context,
+            activity = activity,
             coroutineScope = coroutineScope,
             onNavigateToHiddenApps = onNavigateToHiddenApps,
         )
@@ -268,7 +272,6 @@ private fun SettingsDialogHandler(
                             val appName = dialog.descriptor.name.replace("Action", "App")
                             val appDescriptor = settingsManager.appPickerDescriptors[appName]
                             onNavigateToDialog(appDescriptor?.let { SettingsDialog.AppPicker(it) })
-                            // DO NOT call onDismiss() here — onNavigateToDialog replaces the dialog
                         } else {
                             onDismiss()
                         }
@@ -292,9 +295,12 @@ private fun LockedSettingsView(
     modifier: Modifier = Modifier,
     onUnlock: () -> Unit,
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.fillMaxSize().padding(top = 128.dp), contentAlignment = Alignment.TopCenter) {
         Card(modifier = Modifier.padding(16.dp).fillMaxWidth(MAX_SIZE_FILL)) {
-            Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
                 Icon(
                     Icons.Default.Lock,
                     contentDescription = "Settings Locked",
@@ -302,11 +308,21 @@ private fun LockedSettingsView(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(16.dp))
-                Text("Settings are locked", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Text(
+                    "Settings are locked",
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                )
                 Spacer(Modifier.height(8.dp))
-                Text("Enter your PIN to access settings", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                Text(
+                    "Authenticate to access settings",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
                 Spacer(Modifier.height(16.dp))
-                Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth()) { Text("Unlock Settings") }
+                Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth()) {
+                    Text("Unlock Settings")
+                }
             }
         }
     }
@@ -320,6 +336,7 @@ private fun SettingsContent(
     onSettingClick: (SettingDescriptor) -> Unit,
     viewModel: SettingsViewModel,
     context: android.content.Context,
+    activity: MainActivity?,
     coroutineScope: kotlinx.coroutines.CoroutineScope,
     onNavigateToHiddenApps: () -> Unit,
 ) {
@@ -345,7 +362,7 @@ private fun SettingsContent(
         }
         item {
             SettingsSection(title = "System") {
-                SystemSettings(context, uiState, viewModel, onNavigateToHiddenApps)
+                SystemSettings(context, activity, uiState, viewModel, onNavigateToHiddenApps)
             }
         }
     }
@@ -432,7 +449,6 @@ private fun SettingItem(
 
 private fun SettingCategory.displayName(): String = name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
-// Reusable UI components
 @Composable
 private fun SettingsSection(
     title: String,
@@ -550,7 +566,6 @@ private fun SliderSettingDialog(
     onValueSelected: (Float) -> Unit,
 ) {
     var sliderValue by remember { mutableFloatStateOf(currentValue) }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -575,9 +590,7 @@ private fun SliderSettingDialog(
                 onDismiss()
             }) { Text("Apply") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 
@@ -590,7 +603,6 @@ private fun DropdownSettingDialog(
     onOptionSelected: (Int) -> Unit,
 ) {
     var selected by remember { mutableIntStateOf(selectedIndex) }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -615,9 +627,7 @@ private fun DropdownSettingDialog(
         confirmButton = {
             TextButton(onClick = { onOptionSelected(selected) }) { Text("Apply") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 
@@ -657,19 +667,23 @@ private fun ToggleSettingItem(
 @Composable
 private fun SystemSettings(
     context: android.content.Context,
+    activity: MainActivity?,
     uiState: AppSettings,
     viewModel: SettingsViewModel,
     onNavigateToHiddenApps: () -> Unit,
 ) {
     SettingsToggle(
         title = "Lock Settings",
-        description = "Prevent changes to settings without a PIN",
+        description = "Prevent changes to settings without biometric authentication",
         isChecked = uiState.lockSettings,
         onCheckedChange = { locked ->
-            if (locked) {
-                viewModel.setShowLockDialog(true, true)
-            } else {
-                viewModel.toggleLockSettings(false)
+            // Require biometrics for both enabling AND disabling.
+            activity?.let { mainActivity ->
+                mainActivity.showBiometricPrompt(
+                    activity = mainActivity,
+                    onSuccess = { viewModel.toggleLockSettings(locked) },
+                    onError = { /* Auth failed — leave lock state unchanged */ },
+                )
             }
         },
     )
