@@ -128,7 +128,7 @@ internal class MainViewModel(
             } else {
                 settingsRepository.setAppCustomName(appKey, newName)
             }
-            loadApps()
+            forceLoadApps()
         }
     }
 

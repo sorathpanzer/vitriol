@@ -225,7 +225,7 @@ internal fun AppDrawerScreen(
                 LazyColumn(state = scrollState, modifier = Modifier.fillMaxSize()) {
                     items(
                         items = visibleApps,
-                        key = { app -> "${app.appPackage}/${app.activityClassName ?: ""}/${app.user.hashCode()}" },
+                        key = { app -> "${app.appPackage}/${app.appLabel}/${app.user.hashCode()}" },
                     ) { app ->
                         AppListItem(
                             app = app,
@@ -253,7 +253,7 @@ internal fun AppDrawerScreen(
         val hiddenKeys = remember(hiddenApps) { hiddenApps.map { it.getKey() }.toSet() }
         val hidden = app.getKey() in hiddenKeys
         var renameDialogVisible by remember { mutableStateOf(false) }
-        var newAppName by remember { mutableStateOf(app.appLabel) }
+        var newAppName by remember(app) { mutableStateOf(app.appLabel) }
 
         fun dismiss() {
             showContextMenu = false
