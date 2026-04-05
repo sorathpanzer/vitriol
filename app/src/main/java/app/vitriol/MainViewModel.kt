@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -83,27 +84,23 @@ internal class MainViewModel(
     }
 
     fun loadApps() {
-        // Only load if we don't have apps yet or if we are not already loading
-        if (_appDrawerState.value.apps.isNotEmpty() || _appDrawerState.value.loading) {
-            return 
-        }
-    
-        viewModelScope.launch {
-            _appDrawerState.update { it.copy(loading = true) }
-            try {
-                appRepository.loadApps()
-            } catch (e: Exception) {
-                _appDrawerState.update { it.copy(error = e.message, loading = false) }
-            }
+        if (_appDrawerState.value.apps.isEmpty() && !_appDrawerState.value.loading) {
+            performLoad()
         }
     }
-
+    
     fun forceLoadApps() {
+        performLoad()
+    }
+    
+    private fun performLoad() {
         viewModelScope.launch {
-            _appDrawerState.update { it.copy(loading = true) }
+            _appDrawerState.update { it.copy(loading = true, error = null) }
             try {
                 appRepository.loadApps()
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: SecurityException) {
                 _appDrawerState.update { it.copy(error = e.message, loading = false) }
             }
         }
@@ -136,7 +133,7 @@ internal class MainViewModel(
         viewModelScope.launch {
             try {
                 appRepository.launchApp(app)
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
                 _appDrawerState.update { it.copy(error = "Launch failed") }
             }
         }
