@@ -13,13 +13,13 @@ import app.vitriol.data.settings.AppSettings
 import app.vitriol.helper.MyAccessibilityService
 import app.vitriol.helper.getUserHandleFromString
 import app.vitriol.ui.UiEvent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -88,11 +88,11 @@ internal class MainViewModel(
             performLoad()
         }
     }
-    
+
     fun forceLoadApps() {
         performLoad()
     }
-    
+
     private fun performLoad() {
         viewModelScope.launch {
             _appDrawerState.update { it.copy(loading = true, error = null) }
@@ -190,16 +190,27 @@ internal class MainViewModel(
     }
 
     fun launchSwipeUpApp() = launchGesture { it.swipeUpApp }
+
     fun launchSwipeDownApp() = launchGesture { it.swipeDownApp }
+
     fun launchSwipeLeftApp() = launchGesture { it.swipeLeftApp }
+
     fun launchSwipeRightApp() = launchGesture { it.swipeRightApp }
+
     fun launchTwoFingerSwipeUpApp() = launchGesture { it.twoFingerSwipeUpApp }
+
     fun launchTwoFingerSwipeDownApp() = launchGesture { it.twoFingerSwipeDownApp }
+
     fun launchTwoFingerSwipeLeftApp() = launchGesture { it.twoFingerSwipeLeftApp }
+
     fun launchTwoFingerSwipeRightApp() = launchGesture { it.twoFingerSwipeRightApp }
+
     fun launchOneTapApp() = launchGesture { it.oneTapApp }
+
     fun launchDoubleTapApp() = launchGesture { it.doubleTapApp }
+
     fun launchPinchInApp() = launchGesture { it.pinchInApp }
+
     fun launchPinchOutApp() = launchGesture { it.pinchOutApp }
 
     private fun setGestureApp(
