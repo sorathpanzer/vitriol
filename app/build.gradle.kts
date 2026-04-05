@@ -1,9 +1,9 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application") version libs.versions.androidGradlePlugin.get()
-    id("org.jetbrains.kotlin.plugin.compose") version libs.versions.kotlin.get()
-    id("io.gitlab.arturbosch.detekt") version libs.versions.detekt.get()
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.jetbrains.kotlin)
+    alias(libs.plugins.detekt.kotlin)
     kotlin("plugin.serialization") version libs.versions.kotlin.get()
 }
 
@@ -14,7 +14,6 @@ detekt {
 
 android {
     compileSdk = 36
-    buildToolsVersion = "36.0.0"
     ndkVersion = "29.0.14206865"
 
     lint {
@@ -34,7 +33,6 @@ android {
             freeCompilerArgs.addAll(
                 "-Xjsr305=strict",
                 "-opt-in=kotlin.RequiresOptIn",
-                "-Xreport-perf",
                 "-Xexplicit-api=strict",
             )
         }
@@ -100,10 +98,6 @@ android {
             isDebuggable = true
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
 
@@ -116,34 +110,24 @@ android {
     namespace = "app.vitriol"
 
     dependenciesInfo {
-        includeInApk = true
+        includeInApk = false
     }
 }
 
-androidComponents {
-    onVariants { variant ->
-        variant.outputs.forEach { output ->
-            val abi = output.filters
-                .find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }
-                ?.identifier
-            val baseVersionCode = output.versionCode.getOrElse(1)
-            val abiVersionCode = when (abi) {
-                "x86" -> baseVersionCode - 3
-                "x86_64" -> baseVersionCode - 2
-                "armeabi-v7a" -> baseVersionCode - 1
-                "arm64-v8a" -> baseVersionCode
-                else -> baseVersionCode
-            }
-            output.versionCode.set(abiVersionCode)
-
-            // Custom APK filename
-            if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
-                val abiSuffix = if (abi != null) "-$abi" else ""
-                output.outputFileName.set("vitriol-${android.defaultConfig.versionName}$abiSuffix.apk")
+    androidComponents {
+        onVariants { variant ->
+            variant.outputs.forEach { output ->
+                val abi = output.filters
+                    .find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }
+                    ?.identifier
+    
+                if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
+                    val abiSuffix = abi?.let { "-$it" } ?: ""
+                    output.outputFileName.set("vitriol-${android.defaultConfig.versionName}$abiSuffix.apk")
+                }
             }
         }
     }
-}
 
 tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = false
@@ -158,5 +142,5 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
-    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation(libs.biometric)
 }
