@@ -143,27 +143,29 @@ internal class MainViewModel(
         _appDrawerState.update { it.copy(error = null) }
     }
 
+    private val gestureActions: Map<Int, suspend (AppPreference) -> Unit> by lazy {
+        mapOf(
+            Constants.FLAG_SET_SWIPE_LEFT_APP to settingsRepository::setSwipeLeftApp,
+            Constants.FLAG_SET_SWIPE_RIGHT_APP to settingsRepository::setSwipeRightApp,
+            Constants.FLAG_SET_ONE_TAP_APP to settingsRepository::setOneTapApp,
+            Constants.FLAG_SET_DOUBLE_TAP_APP to settingsRepository::setDoubleTapApp,
+            Constants.FLAG_SET_SWIPE_UP_APP to settingsRepository::setSwipeUpApp,
+            Constants.FLAG_SET_SWIPE_DOWN_APP to settingsRepository::setSwipeDownApp,
+            Constants.FLAG_SET_TWOFINGER_SWIPE_UP_APP to settingsRepository::setTwoFingerSwipeUpApp,
+            Constants.FLAG_SET_TWOFINGER_SWIPE_DOWN_APP to settingsRepository::setTwoFingerSwipeDownApp,
+            Constants.FLAG_SET_TWOFINGER_SWIPE_LEFT_APP to settingsRepository::setTwoFingerSwipeLeftApp,
+            Constants.FLAG_SET_TWOFINGER_SWIPE_RIGHT_APP to settingsRepository::setTwoFingerSwipeRightApp,
+            Constants.FLAG_SET_PINCH_IN_APP to settingsRepository::setPinchInApp,
+            Constants.FLAG_SET_PINCH_OUT_APP to settingsRepository::setPinchOutApp
+        )
+    }
+    
     fun selectedApp(
         app: AppModel,
         flag: Int,
     ) {
-        val saveAction: (suspend (AppPreference) -> Unit)? =
-            when (flag) {
-                Constants.FLAG_SET_SWIPE_LEFT_APP -> settingsRepository::setSwipeLeftApp
-                Constants.FLAG_SET_SWIPE_RIGHT_APP -> settingsRepository::setSwipeRightApp
-                Constants.FLAG_SET_ONE_TAP_APP -> settingsRepository::setOneTapApp
-                Constants.FLAG_SET_DOUBLE_TAP_APP -> settingsRepository::setDoubleTapApp
-                Constants.FLAG_SET_SWIPE_UP_APP -> settingsRepository::setSwipeUpApp
-                Constants.FLAG_SET_SWIPE_DOWN_APP -> settingsRepository::setSwipeDownApp
-                Constants.FLAG_SET_TWOFINGER_SWIPE_UP_APP -> settingsRepository::setTwoFingerSwipeUpApp
-                Constants.FLAG_SET_TWOFINGER_SWIPE_DOWN_APP -> settingsRepository::setTwoFingerSwipeDownApp
-                Constants.FLAG_SET_TWOFINGER_SWIPE_LEFT_APP -> settingsRepository::setTwoFingerSwipeLeftApp
-                Constants.FLAG_SET_TWOFINGER_SWIPE_RIGHT_APP -> settingsRepository::setTwoFingerSwipeRightApp
-                Constants.FLAG_SET_PINCH_IN_APP -> settingsRepository::setPinchInApp
-                Constants.FLAG_SET_PINCH_OUT_APP -> settingsRepository::setPinchOutApp
-                else -> null
-            }
-
+        val saveAction = gestureActions[flag]
+    
         if (saveAction != null) {
             setGestureApp(app, saveAction)
         } else {
@@ -190,27 +192,16 @@ internal class MainViewModel(
     }
 
     fun launchSwipeUpApp() = launchGesture { it.swipeUpApp }
-
     fun launchSwipeDownApp() = launchGesture { it.swipeDownApp }
-
     fun launchSwipeLeftApp() = launchGesture { it.swipeLeftApp }
-
     fun launchSwipeRightApp() = launchGesture { it.swipeRightApp }
-
     fun launchTwoFingerSwipeUpApp() = launchGesture { it.twoFingerSwipeUpApp }
-
     fun launchTwoFingerSwipeDownApp() = launchGesture { it.twoFingerSwipeDownApp }
-
     fun launchTwoFingerSwipeLeftApp() = launchGesture { it.twoFingerSwipeLeftApp }
-
     fun launchTwoFingerSwipeRightApp() = launchGesture { it.twoFingerSwipeRightApp }
-
     fun launchOneTapApp() = launchGesture { it.oneTapApp }
-
     fun launchDoubleTapApp() = launchGesture { it.doubleTapApp }
-
     fun launchPinchInApp() = launchGesture { it.pinchInApp }
-
     fun launchPinchOutApp() = launchGesture { it.pinchOutApp }
 
     private fun setGestureApp(

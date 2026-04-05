@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
@@ -74,6 +75,15 @@ import kotlinx.coroutines.delay
 private const val ANIMATION_DURATION_MS = 300
 private const val DELAY_APP_OPEN = ANIMATION_DURATION_MS.toLong()
 
+// Small helper class to reduce internal parameter count without breaking the public API
+private data class AppListConfig(
+    val showAppNames: Boolean,
+    val fontSize: Float,
+    val onAppClick: (AppModel) -> Unit,
+    val onAppLongClick: (AppModel) -> Unit,
+)
+
+@Suppress("LongParameterList")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppDrawerScreen(
@@ -86,7 +96,6 @@ internal fun AppDrawerScreen(
 ) {
     BackHandler(onBack = onSwipeDown)
 
-    val context = LocalContext.current
     val uiState by viewModel.appDrawerState.collectAsState()
     val settings by settingsViewModel.settingsState.collectAsState()
     val hiddenApps by viewModel.hiddenApps.collectAsState()
@@ -94,18 +103,18 @@ internal fun AppDrawerScreen(
     var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    val focusManager = LocalSoftwareKeyboardController.current?.let { LocalSoftwareKeyboardController.current } // not needed? keep for safety
     val scrollState = rememberLazyListState()
 
     var selectedApp by remember { mutableStateOf<AppModel?>(null) }
     var showContextMenu by remember { mutableStateOf(false) }
 
+    val appsToShow = if (searchQuery.isEmpty()) uiState.apps else uiState.filteredApps
+
     val handleAppClick =
-        remember(viewModel, onAppClick, focusManager, keyboardController) {
+        remember(onAppClick) {
             { app: AppModel ->
                 searchQuery = ""
-                focusManager?.hide()
+                keyboardController?.hide()
                 onAppClick(app)
             }
         }
@@ -115,16 +124,15 @@ internal fun AppDrawerScreen(
     LaunchedEffect(focusRequester) { focusRequester.requestFocus() }
 
     LaunchedEffect(searchQuery) {
-        if (searchQuery.isEmpty() &&
-            (scrollState.firstVisibleItemIndex != 0 || scrollState.firstVisibleItemScrollOffset != 0)
-        ) {
+        if (searchQuery.isEmpty() && (scrollState.firstVisibleItemIndex != 0 || scrollState.firstVisibleItemScrollOffset != 0)) {
             scrollState.scrollToItem(0)
         }
     }
 
-    LaunchedEffect(scrollState.isScrollInProgress) {
-        if (scrollState.isScrollInProgress) {
-            keyboardController?.hide()
+    LaunchedEffect(searchQuery, appsToShow) {
+        if (searchQuery.isNotEmpty() && appsToShow.size == 1) {
+            delay(DELAY_APP_OPEN)
+            handleAppClick(appsToShow[0])
         }
     }
 
@@ -133,7 +141,7 @@ internal fun AppDrawerScreen(
             Modifier
                 .fillMaxSize()
                 .detectSwipeGestures(
-                    onSwipeDown = { onSwipeDown() },
+                    onSwipeDown = onSwipeDown,
                     onSwipeUp = {
                         if (scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0) {
                             onSwipeDown()
@@ -142,175 +150,243 @@ internal fun AppDrawerScreen(
                 ).statusBarsPadding(),
     ) {
         if (selectionMode) {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = selectionTitle,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                        textAlign = TextAlign.Center,
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-            )
+            SelectionHeader(selectionTitle)
         }
 
-        val appsToShow = if (searchQuery.isEmpty()) uiState.apps else uiState.filteredApps
-
-        // Inline search field directly
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier =
-                    Modifier
-                        .width(minOf(maxWidth, 600.dp))
-                        .onFocusChanged { if (it.isFocused) keyboardController?.show() },
-                placeholder = {
-                    Text("Search App...", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                },
-                singleLine = true,
-                textStyle = TextStyle(textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions =
-                    KeyboardActions(onSearch = {
-                        keyboardController?.hide()
-                        appsToShow.firstOrNull()?.let { handleAppClick(it) }
-                    }),
-                colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
-            )
-        }
-
-        LaunchedEffect(searchQuery, appsToShow) {
-            if (searchQuery.isNotEmpty() && appsToShow.size == 1) {
-                delay(DELAY_APP_OPEN)
-                handleAppClick(appsToShow[0])
-            }
-        }
-
-        when {
-            uiState.loading ->
-                Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
-            uiState.error != null ->
-                Box(Modifier.fillMaxSize(), Alignment.Center) { Text("Error: ${uiState.error}") }
-            uiState.apps.isEmpty() && searchQuery.isEmpty() ->
-                Box(Modifier.fillMaxSize(), Alignment.Center) { Text("No apps found") }
-            uiState.filteredApps.isEmpty() && searchQuery.isNotEmpty() ->
-                Box(Modifier.fillMaxSize(), Alignment.TopCenter) {
-                    Button(
-                        onClick = { },
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                contentColor = MaterialTheme.colorScheme.onBackground,
-                                containerColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
-                    ) {
-                        Text("No apps found")
-                    }
-                }
-            else -> {
-                val visibleApps = if (settings.showAppNames) appsToShow else emptyList()
-                LazyColumn(state = scrollState, modifier = Modifier.fillMaxSize()) {
-                    items(
-                        items = visibleApps,
-                        key = { app -> "${app.appPackage}/${app.appLabel}/${app.user.hashCode()}" },
-                    ) { app ->
-                        AppListItem(
-                            app = app,
-                            fontScale = settings.searchResultsFontSize,
-                            onClick = { handleAppClick(app) },
-                            onLongClick = {
-                                selectedApp = app
-                                showContextMenu = true
-                            },
-                            modifier =
-                                Modifier.animateItem(
-                                    fadeInSpec = null,
-                                    fadeOutSpec = null,
-                                    placementSpec = tween(durationMillis = ANIMATION_DURATION_MS),
-                                ),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    if (showContextMenu) {
-        val app = selectedApp ?: return
-        val hiddenKeys = remember(hiddenApps) { hiddenApps.map { it.getKey() }.toSet() }
-        val hidden = app.getKey() in hiddenKeys
-        var renameDialogVisible by remember { mutableStateOf(false) }
-        var newAppName by remember(app) { mutableStateOf(app.appLabel) }
-
-        fun dismiss() {
-            showContextMenu = false
-            selectedApp = null
-        }
-
-        AlertDialog(
-            onDismissRequest = { dismiss() },
-            title = { Text(app.appLabel) },
-            text = {
-                Column {
-                    ContextMenuItem(if (hidden) "Unhide App" else "Hide App", Icons.Default.Settings) {
-                        viewModel.toggleAppHidden(app)
-                        dismiss()
-                    }
-                    ContextMenuItem("Rename App", Icons.Default.Edit) { renameDialogVisible = true }
-                    ContextMenuItem("App Info", Icons.Default.Info) {
-                        context.startActivity(
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", app.appPackage, null)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            },
-                        )
-                        dismiss()
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { dismiss() }) { Text("Close") } },
+        AppSearchBar(
+            query = searchQuery,
+            onQueryChange = { searchQuery = it },
+            focusRequester = focusRequester,
+            onSearch = { appsToShow.firstOrNull()?.let { handleAppClick(it) } },
         )
 
-        if (renameDialogVisible) {
-            AlertDialog(
-                onDismissRequest = { renameDialogVisible = false },
-                title = { Text("Rename ${app.appLabel}") },
-                text = {
-                    TextField(
-                        value = newAppName,
-                        onValueChange = { newAppName = it },
-                        label = { Text("New name") },
-                        singleLine = true,
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.renameApp(app, newAppName)
-                        renameDialogVisible = false
-                        dismiss()
-                    }) {
-                        Text("Save")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { renameDialogVisible = false }) { Text("Cancel") }
-                },
+        AppListContent(
+            uiState = uiState,
+            appsToShow = appsToShow,
+            scrollState = scrollState,
+            config =
+                AppListConfig(
+                    showAppNames = settings.showAppNames,
+                    fontSize = settings.searchResultsFontSize,
+                    onAppClick = handleAppClick,
+                    onAppLongClick = {
+                        selectedApp = it
+                        showContextMenu = true
+                    },
+                ),
+        )
+    }
+
+    if (showContextMenu && selectedApp != null) {
+        AppActionDialog(
+            app = selectedApp!!,
+            hiddenApps = hiddenApps,
+            onToggleHide = { viewModel.toggleAppHidden(it) },
+            onRename = { app, name -> viewModel.renameApp(app, name) },
+            onDismiss = {
+                showContextMenu = false
+                selectedApp = null
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectionHeader(title: String) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                textAlign = TextAlign.Center,
             )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+    )
+}
+
+@Composable
+private fun AppSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    focusRequester: FocusRequester,
+    onSearch: () -> Unit,
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier =
+                Modifier
+                    .width(minOf(maxWidth, 600.dp))
+                    .onFocusChanged { if (it.isFocused) keyboardController?.show() },
+            placeholder = {
+                Text("Search App...", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            },
+            singleLine = true,
+            textStyle = TextStyle(textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions =
+                KeyboardActions(onSearch = {
+                    keyboardController?.hide()
+                    onSearch()
+                }),
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AppListContent(
+    uiState: app.vitriol.AppDrawerUiState,
+    appsToShow: List<AppModel>,
+    scrollState: LazyListState,
+    config: AppListConfig,
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) keyboardController?.hide()
+    }
+
+    when {
+        uiState.loading -> ListStatusBox { CircularProgressIndicator() }
+        uiState.error != null -> ListStatusBox { Text("Error: ${uiState.error}") }
+        uiState.apps.isEmpty() && uiState.searchQuery.isEmpty() -> ListStatusBox { Text("No apps found") }
+        appsToShow.isEmpty() && uiState.searchQuery.isNotEmpty() -> {
+            Box(Modifier.fillMaxSize(), Alignment.TopCenter) {
+                Button(
+                    onClick = { },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            contentColor = MaterialTheme.colorScheme.onBackground,
+                            containerColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                ) { Text("No apps found") }
+            }
+        }
+        else -> {
+            val visibleApps = if (config.showAppNames) appsToShow else emptyList()
+            LazyColumn(state = scrollState, modifier = Modifier.fillMaxSize()) {
+                items(
+                    items = visibleApps,
+                    key = { app -> "${app.appPackage}/${app.appLabel}/${app.user.hashCode()}" },
+                ) { app ->
+                    AppListItem(
+                        app = app,
+                        fontScale = config.fontSize,
+                        onClick = { config.onAppClick(app) },
+                        onLongClick = { config.onAppLongClick(app) },
+                        modifier =
+                            Modifier.animateItem(
+                                fadeInSpec = null,
+                                fadeOutSpec = null,
+                                placementSpec = tween(durationMillis = ANIMATION_DURATION_MS),
+                            ),
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun ListStatusBox(content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize(), Alignment.Center) { content() }
+}
+
+@Composable
+private fun AppActionDialog(
+    app: AppModel,
+    hiddenApps: List<AppModel>,
+    onToggleHide: (AppModel) -> Unit,
+    onRename: (AppModel, String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val hiddenKeys = remember(hiddenApps) { hiddenApps.map { it.getKey() }.toSet() }
+    val isHidden = app.getKey() in hiddenKeys
+    var renameDialogVisible by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(app.appLabel) },
+        text = {
+            Column {
+                ContextMenuItem(if (isHidden) "Unhide App" else "Hide App", Icons.Default.Settings) {
+                    onToggleHide(app)
+                    onDismiss()
+                }
+                ContextMenuItem("Rename App", Icons.Default.Edit) { renameDialogVisible = true }
+                ContextMenuItem("App Info", Icons.Default.Info) {
+                    val intent =
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", app.appPackage, null)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                    context.startActivity(intent)
+                    onDismiss()
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+
+    if (renameDialogVisible) {
+        AppRenameDialog(
+            app = app,
+            onConfirm = { name -> onRename(app, name) },
+            onDismiss = {
+                renameDialogVisible = false
+                onDismiss()
+            },
+        )
+    }
+}
+
+@Composable
+private fun AppRenameDialog(
+    app: AppModel,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var newAppName by remember(app) { mutableStateOf(app.appLabel) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename ${app.appLabel}") },
+        text = {
+            TextField(
+                value = newAppName,
+                onValueChange = { newAppName = it },
+                label = { Text("New name") },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(newAppName)
+                onDismiss()
+            }) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
