@@ -16,12 +16,13 @@ private object ColorValues {
     const val LIGHT_BLUE = 0xFF90CAF9
 }
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(ColorValues.LIGHT_BLUE),
-    onPrimary = Color(ColorValues.BLACK),
-    onPrimaryContainer = Color(ColorValues.LIGHT_GRAY),
-    surface = Color(ColorValues.DARK_GRAY1),
-)
+private val DarkColorScheme =
+    darkColorScheme(
+        primary = Color(ColorValues.LIGHT_BLUE),
+        onPrimary = Color(ColorValues.BLACK),
+        onPrimaryContainer = Color(ColorValues.LIGHT_GRAY),
+        surface = Color(ColorValues.DARK_GRAY1),
+    )
 
 @Composable
 internal fun VitriolTheme(content: @Composable () -> Unit) {
