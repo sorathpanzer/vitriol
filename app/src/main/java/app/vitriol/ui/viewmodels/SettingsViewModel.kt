@@ -67,11 +67,6 @@ internal class SettingsViewModel(
         viewModelScope.launch { _events.emit(event) }
     }
 
-    internal fun setShowLockDialog(
-        show: Boolean,
-        settingPin: Boolean = false,
-    ) {}
-
     internal fun setUnlocked(isUnlocked: Boolean) {
         _temporarilyUnlocked.value = isUnlocked
     }
