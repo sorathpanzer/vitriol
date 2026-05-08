@@ -104,6 +104,7 @@ internal data class AppSettings(
     val rateClicked: Boolean = false,
     val shareShownTime: Long = 0L,
 ) {
+    @Suppress("CyclomaticComplexMethod")
     fun getValue(name: String): Any? =
         when (name) {
             "lockSettings" -> lockSettings
